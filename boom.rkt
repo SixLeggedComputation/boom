@@ -1,8 +1,8 @@
 #lang racket
 
-; programs args:
-; -r --report report file location
-; -t --tracker bug tracker url
+; window can be cnfigured either by passing parameters in command line or by a config file
+; when no report is found, action fields are disabled.
+
 
 (require json
          racket/gui
@@ -11,30 +11,34 @@
          "replacements.rkt"
          "boom-windows.rkt"
          "controls.rkt"
-         "boom-parameters.rkt")
+         "boom-parameters.rkt"
+         "boom-actions.rkt"
+         "args.rkt"
+         "fakerep.rkt"
+         "args.rkt"
+         "text-processing.rkt")
 
 
 (define reporting-tool-background-color
   (make-color 200 200 200 0.8))
 (define bug-tracker "my-bug-tracker")
-(define default-report-file "crash.json")
+
 
 ; Global variable that holds report details window current status
 ; needed with discovery-button%
 (define report-showing #t)
 
 
-(define enable-tracking #t)
-
-
-(define enable-restart #t)
-
-
+; loads report and turns its json content into hasheq
+; file location is searched in command line parameters. If none is provided, report is searched in app directory.
+; if no report at all, a string constant is loaded, which mimics a report and will inform user about this faulty condition
 (define crash-data
-  (with-input-from-string
-      (call-with-input-file "crash.json"
-        (λ(in) (read-line in)))
-    (λ() (read-json))))
+  (with-handlers ([exn:fail? (λ(e) (substitute-report))])
+    (with-input-from-string
+        (call-with-input-file
+            (report-file-location)
+          (λ(in) (read-line in)))
+      (λ() (read-json)))))
 
 
 (define report-display
@@ -42,6 +46,20 @@
    crash-data
    'description
    replace-report))
+
+
+(define (has-action? action-key more-checks)
+  (if (hash-has-key? crash-data action-key)
+      (let ([value (hash-ref
+                    crash-data
+                    action-key
+                    '())])
+        (if (string? value)
+            (if (procedure? more-checks)
+                (more-checks value)
+                #t)
+            #t))
+      #f))           
 
 
 (define header-font%
@@ -128,7 +146,36 @@
 (define (paint-report canvas dc)
   (send dc clear)
   (send dc set-text-foreground "red")
-  (send dc draw-text report-display 5 5))
+
+  (let* ([formatted-text (clip-text canvas report-display '(5 5))]
+         [fs (ceiling
+              (send
+               (send dc get-font)
+               get-size
+               #t))] ; gets current font height as an integer
+         [ylocations (λ(nb-lines)
+                       (map
+                        (λ(n) (+ (* n fs) 5))
+                        (range nb-lines)))] ; computes text lines y coordinates. nb-lines is number of lines obtained from clipping procedure
+         [display-line (λ(x y s)
+                         (send dc draw-text s x y 'grapheme))]) ; primitive function for displaying a string to canvas
+
+    (if (list? (clipped-text formatted-text))
+        (let ([par-lines (length (clipped-text formatted-text))])
+          (cond
+            [(= 0 par-lines)
+             (display-line 5 5 "Error")]
+            [(= 1 par-lines)
+             (display-line 5 5 (car (clipped-text formatted-text)))]
+
+            [else
+             (map (λ(s y)
+                    (display-line 5 y s)
+                    #t)
+                  (clipped-text formatted-text)
+                  (ylocations par-lines))]))
+        
+        (display-line 5 5 report-display))))
 
 
 (define report-window
@@ -142,42 +189,16 @@
 (set-field! companion report-button report-window)
 
 
-(define action-panel
-  (new group-box-panel%
-       [parent boom-window]
-       [label (rstr 'actbox replace-actbox)]
-       [alignment '(left center)]
-       [vert-margin default-spacing]
-       [horiz-margin default-spacing]))
+(define (display-actions)
+  (let([tracking-allowed? (has-action? 'tracker '())]
+       [restart-allowed? (has-action? 'restart '(λ(f) (file-exists? f)))])
+    (when (or tracking-allowed? restart-allowed?)
+      (make-actions boom-window
+                    (enabled-field tracking-allowed? restart-allowed?)))))
 
 
-(define action-layout
-  (new horizontal-panel%
-       [parent action-panel]
-       [alignment '(center center)]))
-
-
-(define check-send
-  (new check-box%
-       [parent action-layout]
-       [label (rstr 'capsend replace-capsend)]
-       [value #f]
-       [horiz-margin default-spacing]))
-
-
-(define check-restart
-  (new check-box%
-       [parent action-layout]
-       [label (rstr 'caprestart replace-restart)]
-       [value #t]
-       [horiz-margin default-spacing]))
-
-
-(define action-help
-  (new message%
-       [parent action-panel]
-       [label (rstr 'acthelp replace-acthelp)]
-       [horiz-margin default-spacing]))
+(define action-control
+  (display-actions))
 
 
 (define (send-report conn content)

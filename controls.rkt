@@ -1,5 +1,7 @@
 #lang racket
 
+; basic controls which are derived from racket/gui classes
+
 (require racket/gui)
 
 
