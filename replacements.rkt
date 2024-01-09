@@ -14,5 +14,13 @@
 (define replace-acthelp "Selected tasks will be completed, once you have clicked close button")
 (define replace-reprep "Sorry. Your report can not be read. Therefore crash manager can provide no information about the crash nor the piece of software by which it was invoked")
 (define replace-unknown "unknown")
+(define replace-msg-parser "Crash manager parser error")
+(define replace-time "local time")
+(define replace-cleanup "clear report")
+(define replace-cleaning-error "File not found. Maybe it was deleted, when the crash manager was running.")
+(define replace-default-title "crash manager")
+(define replace-send-data "send data")
+(define replace-skipwind "Don't show this window again")
+(define replace-endhead "\nCrash manager has been executed.\nOperations are summarized here")
 
 (provide (all-defined-out))

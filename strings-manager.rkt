@@ -2,7 +2,9 @@
 
 ; internationalization
 
-(require "replacements.rkt")
+(require
+  "boom-parameters.rkt"
+  "misc.rkt")
 
 (define alert-locale-error #f)
 (define locale-port #f)
@@ -26,6 +28,12 @@
   (string-split
    (list-ref (string-split local-sys ".") 0)
    "_"))
+
+
+(define current-date-system
+  (if (string-ci=? (last sys-lang) "US")
+      us-dates
+      default-dates))
 
 
 (define/contract (open-locale-port)
@@ -82,17 +90,35 @@
       (hash-ref h 'val))))
 
 
-(define/contract (rstr token-key replacement)
-  (-> search-token/c
-      string?
-      string?)
+(define/contract (rstr token-key replacement [upcase-init #f])
+  (->* (search-token/c
+        string?)
+       (boolean?)
+       string?)
   
-  (let ([search-result (find-resource token-key)])
-    (if (boolean? search-result)
-        replacement
-        search-result)))
+  (let* ([search-result (find-resource token-key)]
+         [returned (if (boolean? search-result)
+                       replacement
+                       search-result)])
+
+    (if upcase-init
+        (string-upcase-initial returned)
+        returned)))
+
+
+(define (colon)
+  (if (string-ci=?
+       (car
+        (string-split
+         (system-language+country)
+         "_"))
+       "fr")
+      " : "
+      ": "))
 
 
 (provide
  alert-locale-error
+ colon
+ current-date-system
  rstr)

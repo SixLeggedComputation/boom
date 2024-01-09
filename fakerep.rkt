@@ -1,5 +1,7 @@
 #lang racket
 
+; a fake report, that is used when the expected one is unreachable or unreadable
+
 (require
   "strings-manager.rkt"
   "replacements.rkt")
