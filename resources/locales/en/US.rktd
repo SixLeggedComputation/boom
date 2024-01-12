@@ -78,4 +78,4 @@
 ((title . "end summary introduction")
  (subtitle . "header")
  (key . "endhead")
- (val . "\nCrash manager has been executed.\nOperations are summarized here")))
+ (val . "Crash manager has been executed.Operations are summarized here")))

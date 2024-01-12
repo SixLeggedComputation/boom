@@ -23,6 +23,7 @@
            (car (list-tail margins 1)))]))
 
 
+; computes space available for text and filters out irrealistic margin values
 (define (get-usable-space container-width margins)
   (let* ([usable-list (cleaned-margin-list margins)]
          [total-margin (foldl + 0 usable-list)])

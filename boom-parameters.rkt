@@ -6,6 +6,10 @@
 
 ; provides default values to all app-specific parameters, which can be specified in config file
 
+; original screen size. Used for computing frames aspect ratio
+(define builder-aspect
+  (list 1920 1080))
+
 
 (define restart-log-file "restart.txt")
 
@@ -147,6 +151,7 @@
 
 (provide
  bitmap-default-alt
+ builder-aspect
  default-dates
  default-dau
  default-icon

@@ -2,16 +2,52 @@
 
 (require
   racket/gui
+  scribble/text/wrap
   "boom-parameters.rkt"
   "accomplishment.rkt"
   "strings-manager.rkt"
-  "replacements.rkt")
+  "replacements.rkt"
+  "ghost.rkt")
 
 
+; Flag, which can be set when debugging module, so as to get some displays.
 (define debug-module #f)
 
+; window aspect width and height aspect ratio on build screen
+; used for fitting window into production screen
+(define end-window-ratios
+  (list
+   (/ 35 192)
+   (/ 25 108)))
+
+
+; fits window into screen
 (define end-window-dims
-  (list 350 250))
+  (let-values (((cur-width cur-height) (get-display-size)))
+    (list
+     (*
+      (car end-window-ratios)
+      cur-width)
+     (* (cadr end-window-ratios)
+        cur-height))))
+
+
+(define operations-label-width-ratio
+  (/ 3 7))
+
+
+(define operations-label-margin-ratio
+  (/ 2 35))
+
+
+(define operations-label-width
+  (* (car end-window-dims) operations-label-width-ratio))
+
+
+(define operations-label-margin
+  (* operations-label-margin-ratio
+     (car end-window-dims)))
+
 
 (define (status-hash? tested-hash)
   (let ((result #f)
@@ -53,11 +89,16 @@
       (if (task-outcome? task-status)
           (let* ([item-panel (new horizontal-panel%
                                   [parent container])]
+                 [summary-lines (wrap-line task-description
+                                           operations-label-width)]
+                 [summary-height (fit-height (length summary-lines)
+                                             ghost-sys-font-size)]
+                 [summary-with-jumps (string-join summary-lines "\n")]
                  [summary-hint (new message%
                                     [parent item-panel]
-                                    [label task-description]
+                                    [label summary-with-jumps]
                                     [auto-resize #f]
-                                    [min-width 150])]
+                                    [min-width operations-label-width])]
                  [summary-status (new message%
                                       [parent item-panel]
                                       [label (let ([label-content (hash-ref task-icons
@@ -111,15 +152,24 @@
 
 
     (define head-label
-      (new message%
-           [parent this]
-           [label (rstr 'endhead replace-endhead)]))
+      (let* ([w (-
+                (car end-window-dims)
+                20)]
+             [fitted-text (string-join
+                     (wrap-line (rstr 'endhead replace-endhead)
+                                (how-many-x? w ghost-sys-font-size))
+                     "\n")])
+        (new message%
+             [parent this]
+             [label fitted-text]
+             [auto-resize #f]
+             [min-width w])))
           
 
     (define info-panel
       (new vertical-panel%
            [parent this]
-           [horiz-margin 20]))
+           [horiz-margin operations-label-margin]))
 
     (hash-for-each task-hint
                    (λ(k v)                     
@@ -151,30 +201,7 @@
 
 
     (define/public (get-task-status)
-      operations-status)
-
-
-    (define/public (set-status new-status)
-      ; both lambda setters must return boolean
-      (let* ((set-with-restoration (λ(arg) ; setter to be used when wrong input lets field unchanged
-                                     (let ((backup operations-status))
-                                       (set! operations-status arg)
-                                       (if (valid-status?)
-                                           #t
-                                           (begin
-                                             (set! operations-status backup)
-                                             #f)))))
-             (set-without-restoration (λ(arg) ; setter to be used when field switches to #f in case of wrong input
-                                        (set! operations-status arg)
-                                        (if (valid-status?)
-                                            #t
-                                            (begin
-                                              (set! operations-status #f)
-                                              #f)))))
-        
-        ((if restore-when-wrong
-             set-with-restoration
-             set-without-restoration) new-status)))))
+      operations-status)))
 
 
 (define test-window

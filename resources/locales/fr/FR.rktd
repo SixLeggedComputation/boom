@@ -78,5 +78,5 @@
 ((title . "end summary introduction")
  (subtitle . "header")
  (key . "endhead")
- (val . "\nCrash manager va se fermer.\nListe et résultats des opérations\neffectuées:")))
+ (val . "\nCrash manager va se fermer. Liste et résultats des opérations effectuées:")))
 
