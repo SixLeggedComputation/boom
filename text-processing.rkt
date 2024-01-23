@@ -2,9 +2,14 @@
 
 (require
   scribble/text/wrap
-  racket/gui)
+  racket/gui
+  "boom-parameters.rkt")
 
 ; fits texts into containers
+
+
+(define debug-module debugger-on)       
+
 
 (define (text-container? tested)
   (is-a? tested canvas%))
@@ -50,7 +55,6 @@
 
 (define (margins/c?)
   (listof exact-nonnegative-integer?))
-       
 
 
 (define/contract (fit-to container margins)
@@ -60,9 +64,13 @@
     (let-values ([(cut-len left-margin) (get-usable-space cntw margins)])
       (let* ([current-dc (send container get-dc)]
              [current-font (send current-dc get-font)]
-             [current-size (send current-font get-size #t)])
+             [current-size (send current-font get-size #f)])
+        
+        (when debug-module
+          (display (~a "client width= " cntw "\nfont size=" current-size "\ncut len= " cut-len "\n")))
+        
         (fitting
-         (exact-floor (* 2.4 (/ cut-len current-size)))    ; if arguments are incorrect cut-len will be 0 and the result will be 0, as a way to alert about error condition
+         (exact-floor (/ cut-len current-size))    ; if arguments are incorrect cut-len will be 0 and the result will be 0, as a way to alert about error condition
          left-margin)))))
 
 ; text field holds either the original string (in case of failure) or a list of clipped strings
@@ -76,10 +84,15 @@
   (if (non-empty-string? s)
       (let ([clip-info (fit-to container margins)])
         (if (> (fitting-cut clip-info) 0)                       ; non 0 cut len value says computation is alright. Then proceed to clipping
-            (clipped
-             (wrap-line s (fitting-cut clip-info))
-             (fitting-left clip-info)
-             #f)
+            (begin
+              (when debug-module
+                (display
+                 (~a "longueur de ligne = " (fitting-cut clip-info) "\n")))
+              
+              (clipped
+               (wrap-line s (fitting-cut clip-info))
+               (fitting-left clip-info)
+               #f))
 
             (clipped                                            ; 0 cut len received: some computation went wrong
              s

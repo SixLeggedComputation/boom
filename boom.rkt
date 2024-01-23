@@ -2,7 +2,7 @@
 
 ; window can be configured either by passing parameters in command line or by a config file
 ; when no report is found, action fields are disabled.
-; actions to be undertaken when user clicks close button are liste inside exit-actions-handler callback
+; actions to be undertaken when user clicks close button are listed inside exit-actions-handler callback
 
 ; method for adding an acion parameter in a way, that accounts for precedence order of the various value sources,
 ; which is hard-coded default < config file < command line < report file:
@@ -16,6 +16,9 @@
 ; the command line accessor will be the parmater initial value when setting up action% control.
 ; if action% is showing, this initial value can then be overriden by report file and user.
 ; Otherwise, this initial value is the one in use for the rest of session.
+
+; modules define a debug-module field, which can be toggled, so as to debug particular modules. Its
+; default value is controlled by debugger-on, which is defined in boom-parameters.
 
 
 (require json
@@ -38,7 +41,8 @@
          "starter.rkt"
          "misc.rkt"
          "accomplishment.rkt"
-         "final-window.rkt")
+         "final-window.rkt"
+         "logging.rkt")
 
 
 (date-display-format (ddisp-style current-date-system))
@@ -62,6 +66,7 @@
 ; if no report at all, a string constant is loaded, which mimics a report and will inform user about this faulty condition
 (define crash-data
   (with-handlers ([exn:fail? (λ(e)
+                               (log-no-report (report-file-location))
                                (report-buffer (substitute-report)
                                               #t))])
     (report-buffer (with-input-from-string
@@ -74,10 +79,23 @@
 
 ; extracts bug description from report
 (define report-about
-  (hash-ref
-   (report-buffer-reading crash-data)
-   'description
-   replace-report))
+  (let* ([process (λ(content)
+                    (if (or (string? content)
+                            (boolean? content))
+                        content
+                        (~a content)))]
+         [imported-data (process
+                         (hash-ref
+                          (report-buffer-reading crash-data)
+                          'description
+                          #f))]
+         [validated (λ(content)
+                      (if (string? content)
+                          (non-empty-string? content)
+                          #f))])
+    (if (validated imported-data)
+        imported-data
+        replace-report)))
 
 
 ; extracts bug time stamp
@@ -371,10 +389,16 @@
   (make-config-dialog boom-window))
 
 
-(when alert-locale-error
-  (send config-dialog show #t))
+(with-handlers ([exn:fail? (λ(e)
+                             (log-general e))])
+  (when alert-locale-error
+    (send config-dialog show #t))
 
-(send boom-window center)
-(send boom-window show #t)
+  (send boom-window center)
+  (send boom-window show #t)
 
-(show-end final-state)
+  (when (show-summary)
+    (show-end final-state)
+
+    (when (summary-status-changed discarded)
+      (edit-config "show-summary" discarded))))

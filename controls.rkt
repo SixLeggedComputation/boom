@@ -10,6 +10,8 @@
   "replacements.rkt"
   )
 
+(define debug-module debugger-on)
+
 
 (define (make-close-button caption container form [action-handler (void)])
   (new button%
@@ -25,12 +27,45 @@
 
 (define text-canvas%
   (class canvas%
-    (init-field [unformatted #f])
+    (init-field [unformatted #f]
+                [color-name "red"]
+                [font-size #f]
+                [background-name #f])
+
+
+    (define/private (my-dc)
+      (send this get-dc))
+
+
+    (define/private (paint-background)
+      (when (string? background-name)
+        (let* ([dc-instance (my-dc)]
+               [old-brush (send dc-instance get-brush)]
+               [new-pen (new pen%
+                             [style 'transparent])]
+               [new-brush (new brush%
+                               [color background-name])])
+          (let-values ([(clw clh) (send this get-client-size)])
+            (when debug-module
+              (display (~a
+                        "painting background width "
+                        clw
+                        ", height "
+                        clh
+                        ", with colour "
+                        background-name
+                        "\n")))
+            (send dc-instance set-brush new-brush)
+            (send dc-instance set-pen new-pen)
+            (send dc-instance draw-rectangle 0 0 clw clh)
+            (send dc-instance set-brush old-brush)))))
+                               
 
 
     (define (paint-text canvas dc)
       (send dc clear)
-      (send dc set-text-foreground "red")
+      (paint-background)
+      (send dc set-text-foreground color-name)
 
       (let* ([formatted-text (clip-text canvas unformatted '(5 5))]
              [fs (ceiling
@@ -69,7 +104,24 @@
 
 
     (super-new
-     [callback paint-text])))
+     [paint-callback paint-text])
+
+    (when (number? font-size)
+      (let* ([current-dc (send this get-dc)]
+             [current-font (send
+                            current-dc
+                            get-font)]
+             [new-font (make-object font%
+                         font-size
+                         (send current-font get-family)
+                         (send current-font get-style)
+                         (send current-font get-weight)
+                         (send current-font get-underlined)
+                         (send current-font get-smoothing))])
+        (send current-dc set-font new-font)))
+
+    (paint-background)))
+        
 
 (provide
  make-close-button

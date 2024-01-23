@@ -7,11 +7,17 @@
   "accomplishment.rkt"
   "strings-manager.rkt"
   "replacements.rkt"
-  "ghost.rkt")
+  "ghost.rkt"
+  "controls.rkt")
 
 
 ; Flag, which can be set when debugging module, so as to get some displays.
-(define debug-module #f)
+(define debug-module debugger-on)
+
+; state variable: informs main module, that user does not want this window any more
+; initialized with #f. If show-end is called, it means that summary window option was selected
+; in configuration
+(define discarded #f)
 
 ; window aspect width and height aspect ratio on build screen
 ; used for fitting window into production screen
@@ -80,7 +86,7 @@
                 [restore-when-wrong #t]) ; behavior when set-status fails. #t : operations-status is restored to its previous value. #f : operations-status is set to #f
 
     (super-new
-     [label "summary"]
+     [label (rstr 'endlabel replace-endlabel)]
      [parent #f]
      [min-height (car end-window-dims)]
      [min-width (cadr end-window-dims)])
@@ -151,19 +157,16 @@
           'not-selected))
 
 
-    (define head-label
-      (let* ([w (-
-                (car end-window-dims)
-                20)]
-             [fitted-text (string-join
-                     (wrap-line (rstr 'endhead replace-endhead)
-                                (how-many-x? w ghost-sys-font-size))
-                     "\n")])
-        (new message%
-             [parent this]
-             [label fitted-text]
-             [auto-resize #f]
-             [min-width w])))
+    (define head-text
+      (new text-canvas%
+           [parent this]
+           [unformatted (rstr 'endhead replace-endhead)]
+           [font-size 10]
+           [color-name "black"]
+           [background-name "Ghost White"]
+           [min-width 300]
+           [stretchable-width #f]
+           [stretchable-height #t]))
           
 
     (define info-panel
@@ -197,11 +200,17 @@
            [parent cmd-panel]
            [label (rstr 'capexit replace-capexit)]
            [callback (λ(b e)
+                       (set! discarded
+                             (stop-showing))
                        (send this show #f))]))
 
 
     (define/public (get-task-status)
-      operations-status)))
+      operations-status)
+
+    ; returns true if user hits the "don't show anymore" checkbox
+    (define (stop-showing)
+      (send discard-check get-value))))
 
 
 (define test-window
@@ -231,5 +240,6 @@
   (set! debug-module #t)
   (show-end test-state))
 
-
-(provide show-end)
+(provide
+ discarded
+ show-end)

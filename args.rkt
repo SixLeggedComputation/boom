@@ -13,8 +13,7 @@
 
 (require
   racket/cmdline
-  "boom-parameters.rkt"
-  "boom-config.rkt")
+  "boom-parameters.rkt")
 
 
 (define config-file
@@ -23,11 +22,12 @@
 
 (define destroy-after-use
   (make-parameter
-   (cfg-dau)))
+   (destroy-after-usage)))
 
 
 (define my-icon
-  (make-parameter default-icon))
+  (make-parameter
+   (main-icon)))
 
 
 (define local-queue

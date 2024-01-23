@@ -2,9 +2,14 @@
 
 (require
   racket/date
-  racket/gui)
+  racket/gui
+  config
+  "misc.rkt")
 
 ; provides default values to all app-specific parameters, which can be specified in config file
+
+; turns on/off dubegging in this module and the others
+(define debugger-on #f)
 
 ; original screen size. Used for computing frames aspect ratio
 (define builder-aspect
@@ -17,22 +22,147 @@
 ; this is not shown by ui and therefore needn't be localized
 (define restart-log-date 'iso-8601)
 
-; default for destroy after use
-(define default-dau #t)
 
-(define default-spacing 20) ; display parameters which sets controls horiz and vert margins
-(define default-icon "/home/ml/Documents/boom/boom2.png")
-(define default-report-file "crash.json") ; where on disc the report to be displayed should be put, when no file location is provided in command line
-(define default-left-margin 5)
-(define default-top-margin 5)
-(define default-line-spacing 0.5)
+(define/contract (edit-config param-name new-value)
+  (-> (or/c symbol? string?)
+      any/c
+      boolean?)
+  
+  (let* ([config-data (make-hasheq)]
+         [search-token (me-or
+                        symbol?
+                        param-name
+                        (string->symbol param-name))]
+         [changed #f]
+         ; this function reads the file, looks for the key and sets
+         ; its associated value to the parameter value
+         ; all of the file data are loaded, otherwise a part of the file would be lost
+         [read-all (λ(config-input-port)
+                     (let download ()
+                       (let ([definition-line (read config-input-port)])
+                         (when (not
+                                (eof-object? definition-line))
+                           (hash-set! config-data
+                                      (car definition-line)
+                                      (if (eq? search-token
+                                               (car definition-line))
+                                          (begin0
+                                            new-value
+                                            (set! changed #t))
+                                          (cadr definition-line)))
+                           (download)))))]
+         ; once the value changed, his function writes the file to its storage
+         [write-all (λ(config-output-port)
+                      (hash-for-each config-data
+                                     (λ(k v)
+                                       ; output-values is used for quoting strings
+                                       (let ([output-value (if (string? v)
+                                                               (~a "\"" v "\"")
+                                                               v)])
+                                         (display
+                                          (~a "("
+                                              k
+                                              " "
+                                              output-value
+                                              ")\n")
+                                          config-output-port)))))])
 
-(define icon-directory "resources/ico/")
-(define task-icons-dir "accomplishment/")
+    ; reads and updates config
+    (call-with-input-file
+        (local-config-file-name)
+      read-all
+      #:mode 'text)
+
+    (when debugger-on
+      (display config-data)
+      (display (~a "\nchanged: " changed)))
+
+    (when changed
+    ; saves new config
+    (call-with-output-file
+        (local-config-file-name)
+      write-all
+      #:mode 'text
+      #:exists 'replace)
+
+      changed)))
+
+
+(define (test-edit-config)
+  (edit-config "show-summary" #f))
+
+
+(read-config (local-config-file-name))
+
+(define-config-param show-summary
+  #:default-value #t)
+
+(define-config-param
+  destroy-after-usage
+  #:default-value #t)
+
+
+(define-config-param display-margins
+  #:default-value 20)
+  
+(define default-spacing
+  (display-margins)) ; display parameters which sets controls horiz and vert margins
+
+(define-config-param main-icon
+  #:default-value "/home/ml/Documents/boom/boom2.png")
+
+
+(define-config-param standard-report-file
+  #:default-value "crash.json")
+
+(define default-report-file
+  (standard-report-file)) ; where on disc the report to be displayed should be put, when no file location is provided in command line
+
+
+(define-config-param display-left-margin
+  #:default-value 5)
+
+(define default-left-margin
+  (display-left-margin))
+
+
+(define-config-param display-top-margin
+  #:default-value 5)
+
+(define default-top-margin
+  (display-top-margin))
+
+(define-config-param display-line-spacing
+  #:default-value 0.5)
+
+(define default-line-spacing
+  (display-line-spacing))
+
+
+(define-config-param resources-icons
+  #:default-value "resources/ico/")
+
+(define icon-directory
+  (resources-icons))
+
+(define-config-param resources-tasks
+  #:default-value "accomplishment/")
+
+(define task-icons-dir
+  (resources-tasks))
 
 
 (define (icon-path file-name)
   (~a icon-directory file-name))
+
+
+(define/contract (summary-status-changed current-status)
+  (-> boolean? boolean?)
+  
+  (not
+   (eq?
+    (show-summary)
+    current-status)))
 
 
 (define (now->string [date-only? #t])
@@ -152,17 +282,21 @@
 (provide
  bitmap-default-alt
  builder-aspect
+ debugger-on
  default-dates
- default-dau
- default-icon
  default-left-margin
  default-line-spacing
  default-report-file
  default-spacing
  default-top-margin
+ destroy-after-usage
+ edit-config
  good-date-indicator
+ main-icon
  now->string
  restart-log-date
+ show-summary
+ summary-status-changed
  task-icons-dir
  us-dates
  wrong-date-indicator

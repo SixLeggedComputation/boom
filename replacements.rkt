@@ -1,7 +1,7 @@
 #lang racket
 
 ; string to be displayed, when some error prevents accessing report content
-(define replace-report "No information available")
+(define replace-report "No information was provided")
 (define replace-cdnf "Crash report")
 (define replace-smip "our software")
 (define replace-cpbody " has just crashed.\n\nWe apologize for the inconvenience.\n\nYou may want to see the report or send it to us")
@@ -22,5 +22,6 @@
 (define replace-send-data "send data")
 (define replace-skipwind "Don't show this window again")
 (define replace-endhead "Crash manager has been executed.Operations are summarized here")
+(define replace-endlabel "Summary")
 
 (provide (all-defined-out))
