@@ -39,7 +39,6 @@
          "os-reader.rkt"
          "boom-actions.rkt"
          "starter.rkt"
-         "misc.rkt"
          "accomplishment.rkt"
          "final-window.rkt"
          "logging.rkt")

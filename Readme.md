@@ -4,7 +4,7 @@ boom will be a customizable third-party application, which desktop applications 
 
 # First, a little of vocabulary
 
-Hereunder 'caller' refers to any application, which sends crash reports and involes boom.
+Hereunder 'caller' refers to any application, which sends crash reports and invokes boom.
 
 #Files in this distribution
 
@@ -56,7 +56,7 @@ crash-report is a path or URL (not implemented yet). If not provided, boom will 
 |---|----|--------------|------------|----------------------|
 |c  [string|paths or URL|Provides an alternative config file.|defaults to original config|
 |d|boolean|false (= f, #f, 0) or true (anything else)|if true, crash report file is erased, once used unless user choses to keep it. if false, crash report file is not erased|defaults to original config (= true). End decision is made by user in any case|
-|i|string[paths or URL|Use this this flag, in order to customize main form and have it display an icon of your own. Downloading from remote URLs is not implemented yet. For the moment, path must point a valid image file. Following formats are supported: bmp, gif, jpeg, png.|The file is rejected. An alert is logged.|
+|i|string|paths or URL|Use this this flag, in order to customize main form and have it display an icon of your own. Downloading from remote URLs is not implemented yet. For the moment, path must point a valid image file. Following formats are supported: bmp, gif, jpeg, png.|The file is rejected. An alert is logged.|
 |r|string|paths or URL|Provides an alternative location for loading crash report. Download from remote location is not implemented yet. File must exists and be json|An error message is displayed in main window and an alert is logged|
 |s|boolean|false (= f, #f, 0) or true (=anything else)|If true, summary window is disabled and does not show at the end|Defaults to config file value|
 
