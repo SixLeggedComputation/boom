@@ -6,10 +6,12 @@
   config
   "misc.rkt")
 
-; provides default values to all app-specific parameters, which can be specified in config file
+; Hard-coded configuration : this module provides default values to all app-specific parameters, which can be specified in config file
 
 ; turns on/off dubegging in this module and the others
 (define debugger-on #f)
+
+(define product-name "Boom")
 
 ; original screen size. Used for computing frames aspect ratio
 (define builder-aspect
@@ -108,12 +110,18 @@
 (define default-spacing
   (display-margins)) ; display parameters which sets controls horiz and vert margins
 
+
+(define report-extension #".json")
+
 (define-config-param main-icon
   #:default-value "/home/ml/Documents/boom/boom2.png")
 
 
 (define-config-param standard-report-file
-  #:default-value "crash.json")
+  #:default-value (string-join
+                   (list "crash"
+                         (bytes->string/locale report-extension))
+                   ""))
 
 (define default-report-file
   (standard-report-file)) ; where on disc the report to be displayed should be put, when no file location is provided in command line
@@ -206,9 +214,13 @@
 (struct icon-info (bitmap kind width))
 
 
+; expects a path to some icon-file and checks if extension is supported
+; as this procedure is for use at module level only, it does not check mime-type
+; outputs a symbol, that is used by bitmap%
 (define/contract (extract-type-symbol icon-file)
   (-> string?
-      (or/c symbol? boolean?))
+      (or/c symbol?
+            boolean?))
   
   (let ([ext (let* ([raw (path-get-extension icon-file)])
                (cond
@@ -294,6 +306,8 @@
  good-date-indicator
  main-icon
  now->string
+ product-name
+ report-extension
  restart-log-date
  show-summary
  summary-status-changed

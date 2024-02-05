@@ -65,16 +65,34 @@
 ; file location is searched in command line parameters. If none is provided, report is searched in app directory.
 ; if no report at all, a string constant is loaded, which mimics a report and will inform user about this faulty condition
 (define crash-data
-  (with-handlers ([exn:fail? (λ(e)
-                               (log-no-report (report-file-location))
-                               (report-buffer (substitute-report)
-                                              #t))])
-    (report-buffer (with-input-from-string
-                       (call-with-input-file
-                           (report-file-location)
-                         (λ(in) (read-line in)))
-                     (λ() (read-json)))
-                   #f)))
+  (let* ([buid-unreadable-message (λ()
+                                   (report-buffer (substitute-report)
+                                                  #t))]
+         [handle-failed-download (λ()
+                                   (log-invalid-location report-raw-url)
+                                   (buid-unreadable-message))])
+    
+    (if (send report-status anything-to-download?)
+        
+        (with-handlers ([exn:fail? (λ(e)
+                                     (log-no-report (report-file-location))
+                                     (buid-unreadable-message))])
+          (report-buffer (with-input-from-string
+                             (call-with-input-file
+                                 (report-file-location)
+                               (λ(in) (read-line in)))
+                           (λ() (read-json)))
+                         #f))
+                
+        (handle-failed-download))))
+
+
+(define/contract (field-content which)
+  (-> symbol? any/c)
+  
+  (hash-ref (report-buffer-reading crash-data)
+            which
+            #f))  
 
 
 ; extracts bug description from report
@@ -85,10 +103,7 @@
                         content
                         (~a content)))]
          [imported-data (process
-                         (hash-ref
-                          (report-buffer-reading crash-data)
-                          'description
-                          #f))]
+                         (field-content 'description))]
          [validated (λ(content)
                       (if (string? content)
                           (non-empty-string? content)
@@ -102,6 +117,27 @@
 (define report-time
   (read-report-time
    (report-buffer-reading crash-data)))
+
+
+; extract caller software name and version for display
+(define (caller-name)
+  (let ([report-software (field-content 'software)]
+        [report-restart (let ([p (field-content 'restart)])
+                          (if (non-empty-string? p)
+                              ; file-name-from-path returns anything after last dir separator. arguments must be trimmed off.
+                              (file-name-from-path
+                               (car
+                                (string-split p))) ; string-split gets rid of possible command line arguments
+                              #f))]
+        [caller-version (field-content 'version)])
+    (cond
+      [(non-empty-string? report-software) (if (non-empty-string? caller-version)
+                                               (string-join
+                                                (list report-software caller-version))
+                                               report-software)]
+      [(and (boolean? report-software)
+            (non-empty-string? report-restart)) report-restart]
+      [else (rstr 'smip replace-smip)])))
 
 
 (define header-font%
@@ -144,13 +180,14 @@
            [min-width icon-width]
            [paint-callback (λ(canvas dc)
                              (send dc draw-bitmap icon 0 0))]))))
+      
+         
+    
 
 (define header
   (new message% [parent header-panel]
        [label (~a "Sorry, "
-                  (hash-ref (report-buffer-reading crash-data)
-                            'software
-                            (rstr 'smip replace-smip))
+                  (caller-name)
                   (rstr 'cpbody replace-cpbody))]
        [font header-font%]
        [horiz-margin default-spacing]))
@@ -398,7 +435,9 @@
   (send boom-window show #t)
 
   (when (show-summary)
-    (show-end final-state)
+    (show-end boom-window final-state)
 
     (when (summary-status-changed discarded)
-      (edit-config "show-summary" discarded))))
+      (edit-config
+       "show-summary"
+       (not discarded)))))

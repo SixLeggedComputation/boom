@@ -12,6 +12,8 @@
 
 
 ; Flag, which can be set when debugging module, so as to get some displays.
+; in debug mode show-end method siplays test-window object
+; in production mode show-end displays a newly build object
 (define debug-module debugger-on)
 
 ; state variable: informs main module, that user does not want this window any more
@@ -187,7 +189,8 @@
     (define discard-check
       (new check-box%
            [parent discard-panel]
-           [label (rstr 'skipwind replace-skipwind)]))
+           [label (rstr 'skipwind replace-skipwind)]
+           [value #f]))
 
     (define cmd-panel
       (new horizontal-panel%
@@ -225,19 +228,24 @@
     result))  
 
 
-(define (show-end [status #f])
-  (let ((end-window (new last-dialog%
-                         [operations-status status])))
+; in debug mode show-end method siplays test-window object
+; in production mode show-end displays a newly build object
+; status is a list of operation results or #f
+(define (show-end main-window [status #f])
+  (let ((end-window (if debug-module
+                        test-window
+                        (new last-dialog%
+                             [operations-status status]))))
 
     (when debug-module
       (display
-       (send test-window get-task-status)))
+       (send end-window get-task-status)))
     
     (send end-window show #t)))
 
 
 (define (test-show)
-  (set! debug-module #t)
+  (set! debug-module #t) 
   (show-end test-state))
 
 (provide
