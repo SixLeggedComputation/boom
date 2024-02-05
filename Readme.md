@@ -69,7 +69,7 @@ Caller is in charge of providing a valid command line. Boom sends it to the oper
 - Check Windows configuration
 - contact remote bug tracker
 - add corporate icon
-- rework UI
+- improve UI
 - turn config file parameters into lists, so as to manage app-specific profiles
 - making boom able to be contacted by remote crashing computers
 - filter-out SQL statements from report
