@@ -23,6 +23,13 @@
   (if (test me) me alternative))
 
 
+; turns a list of numbers into a list of exact-integers
+(define (round-list l)
+  (map (λ(n)
+         (exact-round n))
+       l))
+
+
 (define (empty-string? s)
   (not
    (non-empty-string? s)))
@@ -54,4 +61,5 @@
  me-or
  neither
  not-in-list
+ round-list
  string-upcase-initial)

@@ -6,12 +6,20 @@ boom will be a customizable third-party application, which desktop applications 
 
 Hereunder 'caller' refers to any application, which sends crash reports and invokes boom.
 
-#Files in this distribution
+#Distribution
+
+##Files in this distribution
 
 - source code (*.rkt)
 - localization files (*.rktd)
 - configuration file (local.cfg)
 - dummy crash report for testing (crash.json)
+
+## Files not in this distribution
+
+boom depends on packages :
+- config
+- starter
 
 # Compilation command
 Compilation was tested in ubuntu. Type: raco exe --gui --orig-exe boom.rkt

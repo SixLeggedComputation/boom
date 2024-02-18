@@ -8,7 +8,8 @@
   "strings-manager.rkt"
   "replacements.rkt"
   "ghost.rkt"
-  "controls.rkt")
+  "controls.rkt"
+  "misc.rkt")
 
 
 ; Flag, which can be set when debugging module, so as to get some displays.
@@ -32,12 +33,13 @@
 ; fits window into screen
 (define end-window-dims
   (let-values (((cur-width cur-height) (get-display-size)))
-    (list
-     (*
-      (car end-window-ratios)
-      cur-width)
-     (* (cadr end-window-ratios)
-        cur-height))))
+    (round-list
+     (list
+      (*
+       (car end-window-ratios)
+       cur-width)
+      (* (cadr end-window-ratios)
+         cur-height)))))
 
 
 (define operations-label-width-ratio
@@ -49,12 +51,17 @@
 
 
 (define operations-label-width
-  (* (car end-window-dims) operations-label-width-ratio))
+  (exact-round
+   (*
+    (car end-window-dims)
+    operations-label-width-ratio)))
 
 
 (define operations-label-margin
-  (* operations-label-margin-ratio
-     (car end-window-dims)))
+  (exact-round
+   (*
+    operations-label-margin-ratio
+    (car end-window-dims))))
 
 
 (define (status-hash? tested-hash)
