@@ -18,7 +18,7 @@
  ((title . "Crash prompt part")
   (subtitle . "Part of default main message")
   (key . "cpbody")
-  (val . " vient d\'avoir une avarie.\n\nCroyez bien que ce désgrément nous désole.\n\nVous pouvez consulter le rapport d\'erreur et éventuellement nous l\'envoyer"))
+  (val . " vient d\'avoir une avarie.\n\nCroyez bien que ce désagrément nous désole.\n\nVous pouvez consulter le rapport d\'erreur et éventuellement nous l\'envoyer"))
  ((title . "exit button caption")
   (subtitle . "exit button caption")
   (key . "capexit")

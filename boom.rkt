@@ -157,9 +157,6 @@
                         'software
                         (rstr 'cdnf replace-cdnf))]
        [parent #f]
-       [min-height 800]
-       [min-width 200]
-       [stretchable-height 1000]
        [style (list 'no-caption)]))
 
 
@@ -171,7 +168,7 @@
 
 
 (define icon-canvas
-  (let* ([icon (read-bitmap "/home/ml/Documents/boom/boom2.png")])
+  (let* ([icon (read-bitmap (main-icon))])
     (let-values ([(icon-width icon-height) (values (send icon get-width) (send icon get-height))])
       (new canvas%
            [parent header-panel]
@@ -189,7 +186,8 @@
                   (caller-name)
                   (rstr 'cpbody replace-cpbody))]
        [font header-font%]
-       [horiz-margin default-spacing]))
+       [horiz-margin default-spacing]
+       [auto-resize #t]))
 
 
 (define report-panel
