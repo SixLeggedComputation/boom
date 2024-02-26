@@ -9,25 +9,49 @@
 (define alert-locale-error #f)
 (define locale-port #f)
 
-(define locale-directory
-  "/home/ml/Documents/boom/resources/locales/")
-
 (define dir-separator
   (if (equal? 'unix (system-path-convention-type))
       "/"
       "\\"))
 
+(define locale-directory
+  (~a "resources"
+      dir-separator
+      "locales"
+      dir-separator))
+
 (define default-resource
-  "/home/ml/Documents/boom/resources/locales/en/US.rktd")
+  (~a locale-directory
+      "en"
+      dir-separator
+      "US.rktd"))
 
 (define local-sys
   (system-language+country))
 
 
+; returns a list (language country)
 (define sys-lang
-  (string-split
-   (list-ref (string-split local-sys ".") 0)
-   "_"))
+  (if (eq?
+       (system-type)
+       'windows)
+      ; windows system-type turns out to be "French_France"
+      ; this turns is into '(fr FR)
+      (let* ([unix-equiv (λ(value)
+                           (substring value 0 2))]
+             [win-locale-parts (string-split local-sys "_")]
+             [lng (string-downcase
+                   (unix-equiv
+                    (car win-locale-parts)))]
+             [country (string-upcase
+                       (unix-equiv
+                        (cadr win-locale-parts)))])
+        (list lng country))
+        
+      (string-split
+       (car
+        (string-split local-sys "."))
+       "_")))
 
 
 (define current-date-system

@@ -420,7 +420,8 @@
 
 
 (define config-dialog
-  (make-config-dialog boom-window))
+  ; no parent because this dialog pops up before main form in case of error
+  (make-config-dialog #f))
 
 
 (with-handlers ([exn:fail? (λ(e)

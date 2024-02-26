@@ -17,11 +17,12 @@
 (define crash-manager-dialog%
   (class dialog%
     (init-field [prompt (void)])
-    (super-new [label "crash manager"])
+    (super-new [label product-name])
     (make-cmdlg-prompt prompt this)
     (make-close-button "OK" this this)))
 
 
+; creates a dialog to be used when config file is not found
 (define (make-config-dialog main-window)
   (new crash-manager-dialog%
        [parent main-window]
