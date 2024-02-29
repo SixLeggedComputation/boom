@@ -80,12 +80,12 @@
       (display (~a "\nchanged: " changed)))
 
     (when changed
-    ; saves new config
-    (call-with-output-file
-        (local-config-file-name)
-      write-all
-      #:mode 'text
-      #:exists 'replace)
+      ; saves new config
+      (call-with-output-file
+          (local-config-file-name)
+        write-all
+        #:mode 'text
+        #:exists 'replace)
 
       changed)))
 
@@ -235,10 +235,12 @@
     (if (boolean? ext)
         #f
         (string->symbol
-         (bytes->string/locale
-          (subbytes
-           ext
-           1))))))
+         (~a
+          (bytes->string/locale
+           (subbytes
+            ext
+            1))
+          "/alpha")))))
 
 
 ; a general loader for default or user-defined icons
