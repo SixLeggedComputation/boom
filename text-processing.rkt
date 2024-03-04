@@ -8,7 +8,40 @@
 ; fits texts into containers
 
 
-(define debug-module debugger-on)       
+(define debug-module debugger-on)
+
+
+(define/contract (wrapped s nchars [left-padding 0])
+  (->* (non-empty-string? exact-positive-integer?)
+       (positive-integer?)
+       string?)
+
+  (let* ([apply-padding (not
+                         (or (eq? 0 left-padding)
+                             (>= left-padding nchars)))]
+         [cut-pos (if apply-padding
+                      (- nchars left-padding)
+                      nchars)]
+         [pad (if apply-padding
+                  (string-join
+                   (list "\n"
+                         (make-string
+                          left-padding
+                          (integer->char #x20)))
+                   "")
+                  "\n")]
+         [result-string (string-join
+                         (wrap-line s nchars)
+                         pad)])
+
+    (if apply-padding
+        (string-join
+         (list (make-string
+                left-padding
+                (integer->char #x20))
+               result-string)
+         "")
+        result-string)))
 
 
 (define (text-container? tested)
@@ -107,4 +140,5 @@
 
 (provide
  clip-text
+ wrapped
  (struct-out clipped))

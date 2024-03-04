@@ -9,7 +9,8 @@
   "replacements.rkt"
   "ghost.rkt"
   "controls.rkt"
-  "misc.rkt")
+  "misc.rkt"
+  "text-processing.rkt")
 
 
 ; Flag, which can be set when debugging module, so as to get some displays.
@@ -167,15 +168,15 @@
 
 
     (define head-text
-      (new text-canvas%
+      (new message%
            [parent this]
-           [unformatted (rstr 'endhead replace-endhead)]
-           [font-size 10]
-           [color-name "black"]
-           [background-name "Ghost White"]
-           [min-width 300]
-           [stretchable-width #f]
-           [stretchable-height #t]))
+           [label (string-append "\n"
+                                 (wrapped
+                                  (rstr 'endhead replace-endhead)
+                                  40
+                                  2)
+                                 "\n")]
+           [auto-resize #t]))
           
 
     (define info-panel
