@@ -16,32 +16,34 @@
        (positive-integer?)
        string?)
 
-  (let* ([apply-padding (not
-                         (or (eq? 0 left-padding)
-                             (>= left-padding nchars)))]
-         [cut-pos (if apply-padding
-                      (- nchars left-padding)
-                      nchars)]
-         [pad (if apply-padding
-                  (string-join
-                   (list "\n"
-                         (make-string
-                          left-padding
-                          (integer->char #x20)))
-                   "")
-                  "\n")]
-         [result-string (string-join
-                         (wrap-line s nchars)
-                         pad)])
-
+  (let ([apply-padding (not
+                        (or (eq? 0 left-padding)
+                            (>= left-padding nchars)))]
+        [generate-padding-chars (λ(n)
+                                  (make-string
+                                   n
+                                   (integer->char #x20)))])
     (if apply-padding
+        (let* ([cut-pos (- nchars left-padding)]
+               [pad (string-join
+                     (list "\n"
+                           (generate-padding-chars left-padding))
+                     "")]
+               [result-string (string-join
+                               (wrap-line s nchars)
+                               pad)])
+          (string-join
+           (list (generate-padding-chars left-padding)
+                 result-string)
+           ""))
+
         (string-join
-         (list (make-string
-                left-padding
-                (integer->char #x20))
-               result-string)
-         "")
-        result-string)))
+         (wrap-line s nchars)
+         "\n"))))
+
+
+(define (test-wrapping)
+  (wrapped "a a a a a a a a a a a a a a a a a" 10 2))
 
 
 (define (text-container? tested)
@@ -51,14 +53,17 @@
 (struct fitting(cut left))
 
 
+; checks margins argument format and fixes it, if needed
+; returns a list containing left and right margins
 (define (cleaned-margin-list margins)
   (case (length margins)
-    [(0) (list 0 0)]
-    [(1) (list (car margins) 0)]
-    [(2) margins]
+    [(0) (list 0 0)] ; original argument was empty
+    [(1) (list (car margins) 0)] ; one margin value is missing, it is inferred that it is the right margin
+    [(2) margins] ; 2 values provided: OK. Nothing is done.
+    ; too many values: retains first and second.
     [else (list
            (car margins)
-           (car (list-tail margins 1)))]))
+           (cadr margins))]))
 
 
 ; computes space available for text and filters out irrealistic margin values
