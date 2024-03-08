@@ -174,6 +174,7 @@
                                  (wrapped
                                   (rstr 'endhead replace-endhead)
                                   40
+                                  2
                                   2)
                                  "\n")]
            [auto-resize #t]))

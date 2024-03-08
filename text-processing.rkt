@@ -11,41 +11,6 @@
 (define debug-module debugger-on)
 
 
-(define/contract (wrapped s nchars [left-padding 0])
-  (->* (non-empty-string? exact-positive-integer?)
-       (positive-integer?)
-       string?)
-
-  (let ([apply-padding (not
-                        (or (eq? 0 left-padding)
-                            (>= left-padding nchars)))]
-        [generate-padding-chars (λ(n)
-                                  (make-string
-                                   n
-                                   (integer->char #x20)))])
-    (if apply-padding
-        (let* ([cut-pos (- nchars left-padding)]
-               [pad (string-join
-                     (list "\n"
-                           (generate-padding-chars left-padding))
-                     "")]
-               [result-string (string-join
-                               (wrap-line s nchars)
-                               pad)])
-          (string-join
-           (list (generate-padding-chars left-padding)
-                 result-string)
-           ""))
-
-        (string-join
-         (wrap-line s nchars)
-         "\n"))))
-
-
-(define (test-wrapping)
-  (wrapped "a a a a a a a a a a a a a a a a a" 10 2))
-
-
 (define (text-container? tested)
   (is-a? tested canvas%))
 
@@ -54,7 +19,7 @@
 
 
 ; checks margins argument format and fixes it, if needed
-; returns a list containing left and right margins
+; takes a list of left and right margins and returns a similar but checked list
 (define (cleaned-margin-list margins)
   (case (length margins)
     [(0) (list 0 0)] ; original argument was empty
@@ -67,6 +32,8 @@
 
 
 ; computes space available for text and filters out irrealistic margin values
+; margins is a list of left and right margins
+; returns line length and left margin
 (define (get-usable-space container-width margins)
   (let* ([usable-list (cleaned-margin-list margins)]
          [total-margin (foldl + 0 usable-list)])
@@ -87,7 +54,47 @@
                      (- container-width (cadr usable-list))
                      0)
                     (values container-width 0))))
+        ; container width is undefined therefore margins are too
         (values 0 0))))
+
+
+; pads a text = cuts text at given length and inserts spaces
+; in order to only cut text, see fit-to-container
+; if total padding exceeds nchars, both left and right padding are discarded
+; resulting line length also depends on spacing between words
+(define/contract (wrapped s nchars [left-padding 0][right-padding 0])
+  (->* (non-empty-string? exact-positive-integer?)
+       (positive-integer? positive-integer?)
+       string?)
+
+  (let-values ([(effective-len effective-padding) (get-usable-space nchars
+                                                                    (list left-padding right-padding))])
+    (let ([apply-padding (not (eq? 0 effective-padding))]
+          [generate-padding-chars (λ(n)
+                                    (make-string
+                                     n
+                                     (integer->char #x20)))])
+      (if apply-padding
+          (let* ([cut-pos (- effective-len effective-padding)]
+                 [pad (string-join
+                       (list "\n"
+                             (generate-padding-chars effective-padding))
+                       "")]
+                 [result-string (string-join
+                                 (wrap-line s effective-len)
+                                 pad)])
+            (string-join
+             (list (generate-padding-chars effective-padding)
+                   result-string)
+             ""))
+
+          (string-join
+           (wrap-line s nchars)
+           "\n")))))
+
+
+(define (test-wrapping)
+  (wrapped "a a a a a a a a a a a a a a a a a" 10 2))
 
 
 
