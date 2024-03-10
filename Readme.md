@@ -6,6 +6,9 @@ boom will be a customizable third-party application, which desktop applications 
 
 Hereunder 'caller' refers to any application, which sends crash reports and invokes boom.
 
+#Operating systems
+Ubuntu, Windows.
+
 #Distribution
 
 ##Files in this distribution
@@ -21,8 +24,8 @@ boom depends on packages :
 - config
 - starter
 
-# Compilation command
-Compilation was tested in ubuntu. Type: raco exe --gui --orig-exe boom.rkt
+# Compilation
+Compilation was tested under ubuntu and windows. In Dr Racket, select menu Racket > Create Executable, then select GRacket. Or in terminal, type: raco exe --gui --orig-exe boom.rkt
 
 # Usage
 
@@ -74,7 +77,6 @@ Caller is in charge of providing a valid command line. Boom sends it to the oper
 
 # todos
 
-- Check Windows configuration
 - contact remote bug tracker
 - add corporate icon
 - improve UI
