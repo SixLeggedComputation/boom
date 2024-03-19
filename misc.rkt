@@ -1,6 +1,10 @@
 #lang racket
 
 
+(define racket-font-family
+  (list 'default 'decorative 'roman 'script 'swiss 'modern 'symbol 'system))
+
+
 (define/contract (neither a b)
   (-> boolean? boolean? boolean?)
 
@@ -15,6 +19,22 @@
 
   (boolean?
    (member v l)))
+
+
+; only symbol and non empty string arguments can yield a #t result
+(define/contract (racket-font-family? f)
+  (-> any/c boolean?)
+  
+  (let-values ([(test-canceled? tested-value) (cond
+                                                [(symbol? f) (values #f f)]
+                                                [(non-empty-string? f) (values #f
+                                                                               (string->symbol f))]
+                                                [else (values #t f)])])
+    (if test-canceled?
+        #f
+      
+        (not
+         (not-in-list tested-value racket-font-family)))))
 
 
 (define/contract (me-or test me alternative)
@@ -61,5 +81,7 @@
  me-or
  neither
  not-in-list
+ racket-font-family
+ racket-font-family?
  round-list
  string-upcase-initial)

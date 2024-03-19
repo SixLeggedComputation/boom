@@ -1,11 +1,15 @@
 #lang racket
 
-; window can be configured either by passing parameters in command line or by a config file
+; A popup window, which can be configured either by passing parameters through command line or by a config file.
+; It is divided into 3 sections: prompt, report, actins
+; Prompt informs user about caller crash.
+; Report displays report data
+; Actions lists some actions to be undertaken when user clicks on close button
+; actions are listed inside exit-actions-handler callback
 ; when no report is found, action fields are disabled.
-; actions to be undertaken when user clicks close button are listed inside exit-actions-handler callback
 
-; method for adding an acion parameter in a way, that accounts for precedence order of the various value sources,
-; which is hard-coded default < config file < command line < report file:
+; Steps for adding an action parameter, while accounting for configuration modifiers precedence order.
+; This order is: hard-coded default < config file < command line < report file:
 ; 1 - if the action is to be displayed in user interface, then create corresponding field in struct enabled-field in boom-actions module
 ; 2 - define its hard-coded default value in module boom-parameters. Call it default-k, where k is parameter's name
 ; 3 - create an entry in config.txt. Call it cfg-k
@@ -13,12 +17,12 @@
 ; 5 - in args module create a command line accessor k. Its default value must be cfg-k
 ; 6 - change actions% init-field declaration in boom-actions so that its default value is the command line accessor
 
-; the command line accessor will be the parmater initial value when setting up action% control.
+; the command line accessor will be the parameter initial value when setting up action% control.
 ; if action% is showing, this initial value can then be overriden by report file and user.
 ; Otherwise, this initial value is the one in use for the rest of session.
 
 ; modules define a debug-module field, which can be toggled, so as to debug particular modules. Its
-; default value is controlled by debugger-on, which is defined in boom-parameters.
+; default value is controlled by debugger-on, itself defined in boom-parameters.
 
 
 (require json
@@ -65,8 +69,8 @@
 ; if no report at all, a string constant is loaded, which mimics a report and will inform user about this faulty condition
 (define crash-data
   (let* ([buid-unreadable-message (λ()
-                                   (report-buffer (substitute-report)
-                                                  #t))]
+                                    (report-buffer (substitute-report)
+                                                   #t))]
          [handle-failed-download (λ()
                                    (log-invalid-location report-raw-url)
                                    (buid-unreadable-message))])
@@ -139,8 +143,11 @@
       [else (rstr 'smip replace-smip)])))
 
 
+; font% constructor is polymorphic. If 2nd argument is a symbol, it will be interpreted as a family. If it a string, it will be interpreted as a face
 (define header-font%
-  (make-object font% 12.0 'modern ))
+  (make-object font% 
+    (config-head-font-size) 
+    (config-head-font-face)))
 
 (define message-font
   (make-object
@@ -174,6 +181,7 @@
            [parent header-panel]
            [min-height icon-height]
            [min-width icon-width]
+           [style (list 'transparent)]
            [paint-callback (λ(canvas dc)
                              (send dc draw-bitmap icon 0 0))]))))
       

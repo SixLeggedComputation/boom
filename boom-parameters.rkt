@@ -4,7 +4,8 @@
   racket/date
   racket/gui
   config
-  "misc.rkt")
+  "misc.rkt"
+  "logging.rkt")
 
 ; Hard-coded configuration : this module provides default values to all app-specific parameters, which can be specified in config file
 
@@ -156,6 +157,87 @@
 (define-config-param resources-tasks
   #:default-value "accomplishment/")
 
+
+(define default-head-font-face 'modern)
+
+; font face for boom main window message
+; In opposition to the other config parmaters, this one is not exported by boom-parameters module,
+; because its value is checked
+; see config-head-font-face
+(define-config-param head-font-face
+  #:default-value (symbol->string default-head-font-face))
+
+
+; exports head font face, that has been read from config file
+; if this value is incorrect, it is replaced by default setting
+(define/contract (config-head-font-face)
+  (-> (or/c symbol? string?))
+  
+  (let* ([file-value (head-font-face)]
+         [type-checked-value (if (non-empty-string? file-value)
+                                 file-value
+
+                                 (if (symbol? file-value)
+                                     file-value
+                                     #f))]
+         [family-from-file (λ(f)
+                             (let ([tested-value (cond
+                                                   [(non-empty-string? f) (string->symbol f)]
+                                                   [(symbol? f) f]
+                                                   [else #f])])
+                               (values
+                                (if (boolean? tested-value)
+                                    #f
+                                    (racket-font-family? tested-value))
+                                tested-value)))]
+         [face-from-file (λ(f)
+                           (let ([tested-value (cond
+                                                 [(non-empty-string? f) f]
+                                                 [(symbol? f) (symbol->string f)]
+                                                 [else #f])])
+                             (values
+                              (if (non-empty-string? f)
+                                  (not
+                                   (not-in-list tested-value
+                                                (get-face-list)))
+                                  #f)
+                              tested-value)))])
+    
+    (let-values ([(family? tested-family) (family-from-file type-checked-value)]
+                 [(face? tested-face) (face-from-file type-checked-value)])
+         
+      (if (neither family? face?)
+          (begin
+            (log-invalid-font-face file-value)
+            default-head-font-face)
+          (if family?
+              tested-family
+              tested-face)))))
+
+
+(define default-head-font-size 12.0)
+
+(define-config-param head-font-size
+  #:default-value default-head-font-size)
+
+
+(define/contract (config-head-font-size)
+  (-> real?)
+  
+  (let ([file-value (head-font-size)]
+        [font-size? (λ(value)
+                      (if (real? value)
+                          (and (> value 4.0)
+                               (< value 60.0))
+                          #f))])
+    (if (font-size? file-value)
+        file-value
+        (begin
+          (log-invalid-font-size file-value)
+          default-head-font-size))))
+    
+
+
 (define task-icons-dir
   (resources-tasks))
 
@@ -306,6 +388,8 @@
  destroy-after-usage
  edit-config
  good-date-indicator
+ config-head-font-face
+ config-head-font-size
  main-icon
  now->string
  product-name
