@@ -1,5 +1,7 @@
 #lang racket
 
+(require "misc.rkt")
+
 (define logger-prefix "boom")
 (define msg-exception-caught "An exception was raised")
 (define msg-no-report "Caller sent no report or report could not be read")
@@ -20,6 +22,101 @@
               empty-msg-par
               location)))
 
+
+(define space-str
+  (make-string 1 #\space))
+
+
+(define/contract (connect-sentences start follow)
+  (-> (or/c non-empty-string? void?)
+      non-empty-string?
+      string?)
+
+  (let* ([base-sentence-sep (string-join
+                             (list "." space-str)
+                             "")]
+         [list1 (list "" space-str base-sentence-sep)]
+         [list2 (list "" "." base-sentence-sep)]
+         [cur-sentence-sep (let ([end-match ((λ(first-term)
+                                               (if (void? first-term)
+                                                   2
+                                                   (let ([sl (string-length first-term)])
+                                                     (cond
+                                                       [(string-ci=? space-str first-term) 0]
+                                                       [(last-char? first-term #\.) 1]
+                                                       [(string-suffix? first-term base-sentence-sep) 0]
+                                                       [else 2])))) start)]
+                                 
+                                 [begin-match ((λ(last-term)
+                                                 (let ([first-char (substring last-term 0 1)])
+                                                   (cond
+                                                     [(string-ci=? first-char space-str) 1]
+                                                     [(string-ci=? "." first-char) 0]
+                                                     [else 2]))) follow)])
+                             
+                             
+                             (cond
+                               [(= 0 end-match) (car list1)]
+                               [(and
+                                 (= 1 end-match)
+                                 (= 0 begin-match)) (car list1)]
+                               [(and
+                                 (= 1 end-match)
+                                 [= 1 begin-match]) (list-ref list1 end-match)]
+                               [(and
+                                 (= 1 end-match)
+                                 (= 2 begin-match)) (list-ref list1 end-match)]
+                               [(and
+                                 (= 2 end-match)
+                                 (= 0 begin-match)) (car list1)]
+                               [(and
+                                 (= 2 end-match)
+                                 (= 1 begin-match)) (list-ref list2 begin-match)]
+                               [else base-sentence-sep]))]
+         [trailer (string-append cur-sentence-sep follow)])
+    (if (void? start)
+        trailer
+        (string-append start trailer))))
+
+
+(define (test-cs1)
+  (connect-sentences "a" "b"))
+
+(define (test-cs2)
+  (connect-sentences "a." "b"))
+
+
+(define (test-cs3)
+  (connect-sentences (void) "No data provided"))
+
+
+(define/contract (connect-words w-before w-after)
+  (-> string? string? string?)
+  
+  (string-normalize-spaces
+   (string-join
+    (list w-before w-after))))
+      
+
+
+(define/contract (msg-code-issue [issue-data (void)])
+  (->* ()
+       (any/c)
+       string?)
+  
+  (let ([seed "internal error"])
+    (if (void? issue-data)
+        (connect-sentences seed "No data provided")
+        (connect-words seed
+                       (format "with data: ~a"
+                               issue-data)))))
+
+(define (test-mci1)
+  (msg-code-issue (void)))
+
+(define (test-mci2)
+  (msg-code-issue "could not attach controls"))
+
 (define/contract (check-emptiness v)
   (-> string? string?)
   
@@ -39,7 +136,10 @@
    (current-logger)))
 
 
-(define (log-err text data)
+(define/contract (log-err text [data #f])
+  (->* (string?)
+       any/c)
+  
   (log-message boom-logger
                'error
                #f
@@ -50,6 +150,16 @@
 
 (define (log-general ex)
   (log-err msg-exception-caught ex))
+
+
+; to be used when code is broken
+(define (log-code-issue [issue-data #f])
+  (log-err (msg-code-issue (if (boolean? issue-data)
+                               (if (not issue-data)
+                                   (void)
+                                   issue-data)
+                               issue-data))
+           issue-data))
 
 
 ; general member, that is to be called by any function, which must format a value into an error message
@@ -83,6 +193,7 @@
 
 
 (provide
+ log-code-issue
  log-general
  log-invalid-icon
  log-invalid-font-face

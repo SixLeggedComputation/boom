@@ -18,6 +18,11 @@
   "logging.rkt")
 
 
+(define verbose-start
+  (make-parameter
+   (report-at-start)))
+
+
 (define config-file
   (make-parameter #f))
                 
@@ -165,6 +170,12 @@ This behavior can be altered by including lq parameter in report files"
    [("-r" "--report") custom-report
                       "provides report location. This parameter should be a full or relative path, including file name"
                       (set-report-status-from-entry custom-report)]
+   [("-v" "--verbose") new-verbosity
+                       "display crash report at start"
+                       (verbose-start
+                        (decode-boolean new-verbosity
+                                        (verbose-start)))]
+                        
 
    #:args () ; expect one command-line argument: a report location
 
@@ -176,4 +187,5 @@ This behavior can be altered by including lq parameter in report files"
  report-file-location
  report-raw-url
  report-status
- skip-end)
+ skip-end
+ verbose-start)

@@ -1,6 +1,25 @@
 #lang racket
 
 
+(define/contract (last-char? src c)
+  (-> string? char? boolean?)
+  
+  (let ([sl (string-length src)])
+    (if (> sl 1)
+        (eq? (string-ref src
+                         (- sl 1))
+             c)
+        #f)))
+
+
+(define (test-last-char1)
+  (last-char? "a." #\.))
+
+
+(define (test-last-char2)
+  (last-char? "ab" #\c))
+
+
 (define racket-font-family
   (list 'default 'decorative 'roman 'script 'swiss 'modern 'symbol 'system))
 
@@ -73,11 +92,11 @@
 
 (define (test-initial2)
   (string-upcase-initial "a"))
-             
-
-
+ 
+            
 (provide
  empty-string?
+ last-char?
  me-or
  neither
  not-in-list

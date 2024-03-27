@@ -97,8 +97,14 @@
 
 (read-config (local-config-file-name))
 
+
+(define-config-param report-at-start
+  #:default-value #t)
+
+
 (define-config-param show-summary
   #:default-value #t)
+
 
 (define-config-param
   destroy-after-usage
@@ -393,6 +399,7 @@
  main-icon
  now->string
  product-name
+ report-at-start
  report-extension
  restart-log-date
  show-summary
