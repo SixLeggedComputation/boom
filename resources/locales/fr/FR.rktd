@@ -82,5 +82,9 @@
 ((title . "final summery")
  (subtitle . "final window label")
  (key . "endlabel")
- (val . "Résumé")))
+ (val . "Résumé"))
+((title . "operating system prompt")
+ (subtitle . "intended for displaying operating system of the crashed app in report window")
+ (key . "os_prompt")
+ (val . "système d'exploitation :")))
 

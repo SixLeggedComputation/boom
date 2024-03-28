@@ -382,12 +382,15 @@
   (make-time-display meta-panel))
 
 
+; this fields displays caller app's environment
 (define os-field
   (new message%
        [parent meta-panel]
-       [label (~a "operating system: "
-                  (os-reading-value
-                   (read-report-os (report-buffer-reading crash-data))))]))
+       [label (string-join
+               (list (rstr 'os_prompt replace-os-prompt)
+                     (os-reading-value
+                      (read-report-os (report-buffer-reading crash-data)))))]))
+
 
 (send meta-panel min-height (send time-field get-height))
 

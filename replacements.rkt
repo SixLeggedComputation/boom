@@ -23,5 +23,6 @@
 (define replace-skipwind "Don't show this window again")
 (define replace-endhead "Crash manager has been executed.Operations are summarized here")
 (define replace-endlabel "Summary")
+(define replace-os-prompt "operating system")
 
 (provide (all-defined-out))
