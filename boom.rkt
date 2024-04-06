@@ -150,14 +150,6 @@
     (config-head-font-size) 
     (config-head-font-face)))
 
-(define message-font
-  (make-object
-      font%
-    10.0
-    'modern
-    'normal
-    'semilight))
-
 
 ; main form
 (define boom-window
@@ -176,6 +168,7 @@
        [vert-margin default-spacing]))
 
 
+; holds some picture, which should ideally identify caller app, but can be anything that the caller tastes.
 (define icon-canvas
   (let* ([icon (read-bitmap (main-icon))])
     (let-values ([(icon-width icon-height) (values (send icon get-width) (send icon get-height))])
@@ -185,16 +178,39 @@
            [min-width icon-width]
            [style (list 'transparent)]
            [paint-callback (λ(canvas dc)
-                             (send dc draw-bitmap icon 0 0))]))))
-      
+                             (send dc draw-bitmap icon 0 0))]))))      
          
     
-
-(define header
+; User-friendly prompt for informing about caller crash
+(define user-friendly-prompt
   (new message% [parent header-panel]
-       [label (~a "Sorry, "
-                  (caller-name)
-                  (rstr 'cpbody replace-cpbody))]
+       [label (let ([default-message (~a "Sorry, "
+                                         (caller-name)
+                                         (rstr 'cpbody replace-cpbody))]) ; This the default algorithm
+                
+                   (with-handlers ([exn:fail? (λ(e)
+                                                (warn-config-exception e)
+                                                default-message)])
+                     
+                     (let ([mask-analysis (eval-user-friendly-text)])
+
+                       (if (uft-evaluation-done? mask-analysis)
+                           (begin
+                             ; sends warning if user-friendly-mask value is incorrect
+                             ; no else. The else case is when user-friendly-mask value is ok
+                             (case (uft-evaluation-flag-status mask-analysis)
+                               ['set-flag (warn-ftm #t)]
+                               ['unset-flag (warn-ftm #f)])
+                               
+                             (case (uft-evaluation-algorithm mask-analysis)
+                             ['default default-message]
+                             ['plain (user-friendly-text)]
+                             [else (format
+                                    (user-friendly-text)
+                                    (caller-name))]))
+                           (begin
+                             (warn-ft-config)
+                             default-message)))))]
        [font header-font%]
        [horiz-margin default-spacing]
        [auto-resize #t]))

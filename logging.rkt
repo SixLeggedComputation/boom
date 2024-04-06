@@ -1,26 +1,12 @@
 #lang racket
 
-(require "misc.rkt")
+; module in charge of sending information about program execution
+; It is better not to include any module from the application into this one
+; In most cases texts are not localized, because they're intended for developpers, not users
 
-(define logger-prefix "boom")
-(define msg-exception-caught "An exception was raised")
-(define msg-no-report "Caller sent no report or report could not be read")
-(define empty-msg-par "[!Empty]")
-
-
-(define (msg-invalid-face value)
-  (format "~a is not a valid font face" value))
-
-
-(define (msg-invalid-font-size value)
-  (format "~a is no valid prompt font size" value))
-
-
-(define (msg-invalid-bitmap location)
-  (format "~a either is not a valid location or does not point to a valid icon file"
-          (if (void? location)
-              empty-msg-par
-              location)))
+(require "misc.rkt"
+         racket/logging
+         "logstrings.rkt")
 
 
 (define space-str
@@ -136,20 +122,44 @@
    (current-logger)))
 
 
-(define/contract (log-err text [data #f])
-  (->* (string?)
+(define/contract (log-custom severity text [data #f])
+  (->* (log-level/c string?)
        any/c)
   
   (log-message boom-logger
-               'error
+               severity
                #f
                text
                data
                logger-prefix))
 
 
-(define (log-general ex)
-  (log-err msg-exception-caught ex))
+(define/contract (log-err text [data #f])
+  (->* (string?)
+       any/c)
+  
+  (log-custom 'error text data))
+
+
+(define/contract (warn text [data #f])
+  (->* (string?)
+       any/c)
+
+  (log-custom 'warning text data))
+
+
+; general method, that is to be used with with-handlers
+; ex = the exception, that was caught
+; lethal? = should this exception be logged as error or warning?
+(define (log-general ex [lethal? #t])
+  (let-values ([(proc qualifier) (if lethal?
+                                     (values log-err msg-lethal)
+                                     (values warn msg-non-lethal))])
+    (proc
+     (format msg-exception-caught
+             qualifier
+             ex)
+     ex)))
 
 
 ; to be used when code is broken
@@ -192,11 +202,31 @@
   (log-err  msg-no-report loc))
 
 
+(define/contract (warn-ftm should-be-set?)
+  (-> boolean? void?)
+  
+  (warn (if should-be-set?
+            msg-ftm-set
+            msg-ftm-unset)))
+
+
+(define (warn-ft-config)
+  (warn msg-ft-warning))
+
+
+(define (warn-config-exception e)
+  (log-general e #f))
+
+
 (provide
+ connect-sentences
  log-code-issue
  log-general
  log-invalid-icon
  log-invalid-font-face
  log-invalid-font-size
  log-invalid-location
- log-no-report)
+ log-no-report
+ warn-ftm
+ warn-ft-config
+ warn-config-exception)

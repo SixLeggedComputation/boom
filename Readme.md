@@ -1,12 +1,14 @@
-boom 0.0.1 is a crash manager. I wanted one, to be used with several of my apps and I also wanted to assay racket GUI capability. This is a first attempt.
+boom is a customizable crash manager. Its purpose is informing users about an application crash and handling crash data.
 
 boom will be a customizable third-party application, which desktop applications will be able to run before crashing, so as to inform users, display error reports, eventually send these to a bug tracker (though contacting remote bug trackers is not implemented yet) and restart calling application.
+
+This code was not written with the intent of being used as a racket script, but to be compiled into an executable.
 
 # First, a little of vocabulary
 
 - caller: application, which issued a crash report and invoked boom
 - crash report: data file, which describes caller fault.
-- prompt: human readable message displayed by the popup window, which informs the user, about caller crash. This message is distinct from the crash report.
+- prompt: user friendly message displayed by the popup window, which informs the user, about caller crash. This message is distinct from the crash report.
 
 #Operating systems
 Ubuntu, Windows.
@@ -22,13 +24,13 @@ Ubuntu, Windows.
 
 ## Files not in this distribution
 
-boom depends on packages:
+Compiling boom requires Racket packages:
 
 - config
 - starter
 
 # Compilation
-Compilation was tested under ubuntu and windows. In Dr Racket, select menu Racket > Create Executable, then select GRacket. Or in terminal, type: raco exe --gui --orig-exe boom.rkt
+Compilation was tested under ubuntu and windows, using Dr Racket 8.12. In Dr Racket, select menu Racket > Create Executable, then select GRacket. Or in terminal, type: raco exe --gui --orig-exe boom.rkt
 
 # Usage
 
@@ -38,7 +40,7 @@ A default configuration is hard-coded. It can be overridden in 4 ways. A per cal
 
 user choices > bug report > command line > config file > default
 
-A few style parameters are defined in config file and default configuration only.
+Main window prompt and a few style parameters are defined in config file and default configuration only.
 
 A number of icons is needed for buttons or options selection lists. These are expected to be stored in one directory. A default set of icons is provided, but this can be personalized in config file by providing an other directory.
 
@@ -100,10 +102,12 @@ Config file name extension is *.cfg. Config files consist in key value pais in t
 |**resources-tasks**|String| |Specific icons set for summary window. This field must point to a subdirectory of resource-icons|
 |**show-summary**|boolean|-s|Should an operation summary window be opened before boom terminates|
 |**standard-report-file**|String     |-r|Path ending with *.json extension. Change this value to tell the software, where to look for bug report. When it is a disk location, check you have access privilege. Remote locations URL not supported yet.                                                                                                                                                                                                                                                                                                                                                                           |
+|**user-friendly-mask**|boolean| |companion field for user-friendly-text. #f (or anything, which evaluates to true) tells the system to use user-friendly-text as a mask and to fit caller app name into it. Use #f (or anything, which evaluates to false) is order to display user-friendly-text without being altered|
+|**user-friendly-text**|String or keyword| |Defines a user-friendly text for informing about caller crash. Not a mandatory field. It can take values: <ul><li>"$d" or "$D"</li><li>format mask string with a placeholder ~a for inserting caller name</li><li>some plain text</li></ul>. <p>Omitting this field, providing a "$d" or $D value, or providing any incorrect configuration will cause boom to switch to a default hard-coded mask into which caller app name is inserted.</p><p>If what is displayed in the window is not the expected text, check logs for any information about a possible configuration error.</p>|
 
 ## Restarting caller app
 
-Caller is in charge of providing a valid command line. Boom sends it to the operating system. For security reasons, each time boom does that, an entry is created in a separate text-formatted diary, so that users can check what is started by boom and when. It is named 'restart.txt' and is located in the executable directory. This automatic restart can always be disabled from UI.
+The caller must provide a valid command line. Boom sends it to the operating system. For security reasons, each time boom does that, an entry is created in a separate text-formatted diary, so that users can check what is started by boom and when. It is named 'restart.txt' and is located in the executable directory. This automatic restart can always be disabled from UI.
 
 # todos
 

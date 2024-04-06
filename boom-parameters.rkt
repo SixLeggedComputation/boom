@@ -1,15 +1,23 @@
 #lang racket
 
+; module boom_parameters defines:
+; - the hard-coded configuration : this module provides default values to all app-specific parameters, which can be specified in config file
+; - config file decoding and update
+
+; non procedural identifiers relating to the hard-coded configuration start with "default-"
+; In config files, some keywords can be used as values. Their identifiers start with "cfk-" (i.e. configuration file keyword).
+; Their value starts with a $ sigil, so that they are not mistaken for racket "~" or "#".
+
+
 (require
   racket/date
   racket/gui
   config
   "misc.rkt"
-  "logging.rkt")
+  "logging.rkt"
+  "replacements.rkt")
 
-; Hard-coded configuration : this module provides default values to all app-specific parameters, which can be specified in config file
-
-; turns on/off dubegging in this module and the others
+; turns on/off debugging in this module and the others
 (define debugger-on #f)
 
 (define product-name "Boom")
@@ -96,6 +104,121 @@
 
 
 (read-config (local-config-file-name))
+
+
+; keyword, which informs boom to use the default mask in order to produce user info message
+; see user-info-text
+(define cfk-default "$d")
+
+
+; string for informing the user about caller app crash
+; There is no default value. If this parameter is not provided, a default algorithm produces a message.
+; Keyword $d tells boom to enable the default algorithm
+; see also uft-evaluation, eval-user-friendly-text, default-info-algorithm?
+(define-config-param user-friendly-text
+  #:default-value cfk-default)
+
+
+(define (default-info-algorithm?)
+  (string-ci=? cfk-default
+               (user-friendly-text)))
+
+
+; boolean field informing about what user-friendly-text is:
+; #t = user-friendly-text is a mask with a placeholder for caller app name. #f user-friendly-text is a plain string, that is to be displayed as is
+; defaults to #t because user-friendly-text defaults to a mask
+; see also uft-evaluation, eval-user-friendly-text, default-info-algorithm?
+(define-config-param user-friendly-mask
+  #:default-value #t)
+
+
+(struct uft-evaluation(done? algorithm flag-status)
+  #:guard (λ(done-value algorithm-value flag-status-value name)
+            (let* ([output-guard-message (λ(msg) ; puts a header in front of error message content, so as to identify its source.
+                                           (format "~a. Guard procedure. ~a"
+                                                   name
+                                                   msg))]
+                   [append-wrong-value (λ(v prompt) ; Formts a message saying that a wrong value has been detected and what it is
+                                         (format "~a. Found: ~a"
+                                                 prompt
+                                                 v))]
+                   [stop-guard (λ(prompt wrong-value) ; sends the error message
+                                 (error
+                                  (output-guard-message
+                                   (append-wrong-value wrong-value prompt))))]
+                   [accept-algo (λ(v) ; procedure in charge of asserting the value for algorithm
+                                  (list?
+                                   (member algorithm-value
+                                           (list 'default 'plain 'mask))))]
+                   [accept-done-field (λ(v) ; procedure in charge of asserting the value for field done
+                                        (boolean? v))]
+                   [accept-flag (λ(v) ; procedure in charge of asserting the value for field flag-status
+                                  (list?
+                                   (member flag-status-value
+                                           (list 'set-flag 'unset-flag 'ok))))]
+
+                   [valid-test-proc? (λ(p) ; protection against coding errors
+                                       (if (procedure? p)
+                                           (procedure-arity? 1)
+                                           #f))]
+                   ; this is where a parameter is tested
+                   ; input-value = value provided to guard function
+                   ; test-fun = procedure of arity 1, which returns a boolean telling if inout-value is correct. If anything else is provided, an error is fired.
+                   ; error-prompt = string description of the message, that is produced when the parameter value is incorrect. Must not be empty or an error is fired.
+                   [assert-param (λ(input-value test-fun error-prompt)
+                                   (let ([applicable? (if (valid-test-proc? test-fun)
+                                                          (if (non-empty-string? error-prompt)
+                                                              'ok
+                                                              'prompt)
+                                                          'test)]
+                                         [not-applicable-error (λ(m)
+                                                                 (error
+                                                                  (output-guard-message
+                                                                   (format "Guard tests disabled ~a" m))))])
+                                     (case applicable?
+                                           ['prompt (not-applicable-error "because of invalid prompt")]
+                                           ['test (not-applicable-error "by invalid test procedure")]
+                                           [else (unless (test-fun input-value)
+                                                   (stop-guard error-prompt input-value))])))])
+
+              (assert-param algorithm-value accept-algo "invalid algorithm value")
+              (assert-param done-value accept-done-field "field done must be boolean")
+              (assert-param flag-status-value accept-flag "invalid flag evaluation")
+
+              (values done-value
+                      algorithm-value
+                      flag-status-value))))                    
+              
+
+; Sanity check of the informtion, that's been read from config file
+; Looks for agreement between user-friendly-text and user-friendly-mask
+(define/contract (eval-user-friendly-text)
+  (-> uft-evaluation?)
+  
+  (if (string? (user-friendly-text))
+      (if (non-empty-string? (user-friendly-text))
+          (if (default-info-algorithm?)
+              (uft-evaluation #t 'default (if (user-friendly-mask)
+                                              'unset-flag
+                                              'ok))
+
+              (let ([mask-test (string-contains? (user-friendly-text) "~a")])
+                (cond
+                  ; discrepancy: user-friendly text contains a mask, whereas user-friendly-flag was improperly assigned #f value
+                  [(and mask-test
+                        (not (user-friendly-mask))) (uft-evaluation #t 'mask 'set-flag)]
+                  ;discrepancy user-friendly-mask says user-friendly-text should be handled as a mask, but no placeholder was found in it.
+                  [(and
+                    (not mask-test)
+                    (user-friendly-mask)) (uft-evaluation #t 'plain 'unset-flag)]
+                  ; OK: user-friendly-mask says user-friendly-text is plain text and we verified it.
+                  [(and
+                    (not mask-test)
+                    (not (user-friendly-mask))) (uft-evaluation #t 'plain 'ok)]
+                  ; OK: user-friendly-mask says, user-friendly-text is a mask and it was found to actually be one
+                  [else (uft-evaluation #t 'mask 'ok)])))
+          (uft-evaluation #f 'default 'ok))
+      (uft-evaluation #f 'default 'ok)))
 
 
 (define-config-param report-at-start
@@ -384,8 +507,10 @@
 (provide
  bitmap-default-alt
  builder-aspect
+ cfk-default
  debugger-on
  default-dates
+ default-info-algorithm?
  default-left-margin
  default-line-spacing
  default-report-file
@@ -393,9 +518,12 @@
  default-top-margin
  destroy-after-usage
  edit-config
+ eval-user-friendly-text
  good-date-indicator
  config-head-font-face
  config-head-font-size
+ user-friendly-mask
+ user-friendly-text
  main-icon
  now->string
  product-name
@@ -414,4 +542,5 @@
                        (or/c icon-info? string?))])
 
  (struct-out ddisp)
- (struct-out icon-info))
+ (struct-out icon-info)
+ (struct-out uft-evaluation))
