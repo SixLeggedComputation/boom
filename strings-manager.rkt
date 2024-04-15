@@ -141,8 +141,25 @@
       ": "))
 
 
+
+; checks if resource is a mask
+; token-key is same key as in rstr
+; returns void when token-key points to no resource, boolean otherwise
+(define/contract (resource-is-mask? token-key)
+  (-> search-token/c
+      (or/c boolean? void?))
+  
+  (let* ([not-found ""]
+         [found (rstr token-key not-found)]) ; no error handler here. The only possible error would be fired by search-token/c. But token-mask already complies to this contract.
+
+    (if (non-empty-string? found)
+        (mask? found)
+        (void))))
+
+
 (provide
  alert-locale-error
  colon
  current-date-system
+ resource-is-mask?
  rstr)

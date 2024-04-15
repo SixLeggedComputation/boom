@@ -30,6 +30,7 @@ Compiling boom requires Racket packages:
 - starter
 
 # Compilation
+You can compile with or without debug output, depending on the value of boolean flag debugger-on in module boom-parameters.
 Compilation was tested under ubuntu and windows, using Dr Racket 8.12. In Dr Racket, select menu Racket > Create Executable, then select GRacket. Or in terminal, type: raco exe --gui --orig-exe boom.rkt
 
 # Usage
@@ -102,8 +103,20 @@ Config file name extension is *.cfg. Config files consist in key value pais in t
 |**resources-tasks**|String| |Specific icons set for summary window. This field must point to a subdirectory of resource-icons|
 |**show-summary**|boolean|-s|Should an operation summary window be opened before boom terminates|
 |**standard-report-file**|String     |-r|Path ending with *.json extension. Change this value to tell the software, where to look for bug report. When it is a disk location, check you have access privilege. Remote locations URL not supported yet.                                                                                                                                                                                                                                                                                                                                                                           |
-|**user-friendly-mask**|boolean| |companion field for user-friendly-text. #f (or anything, which evaluates to true) tells the system to use user-friendly-text as a mask and to fit caller app name into it. Use #f (or anything, which evaluates to false) is order to display user-friendly-text without being altered|
-|**user-friendly-text**|String or keyword| |Defines a user-friendly text for informing about caller crash. Not a mandatory field. It can take values: <ul><li>"$d" or "$D"</li><li>format mask string with a placeholder ~a for inserting caller name</li><li>some plain text</li></ul>. <p>Omitting this field, providing a "$d" or $D value, or providing any incorrect configuration will cause boom to switch to a default hard-coded mask into which caller app name is inserted.</p><p>If what is displayed in the window is not the expected text, check logs for any information about a possible configuration error.</p>|
+|**user-friendly-mask**|boolean| |companion field for user-friendly-text. Mandatory if user-friendly-text is used. #f (or anything, which evaluates to true) tells the system to handle user-friendly-text as a mask and to fit caller app name into it. Use #f (or anything, which evaluates to false) in order to display user-friendly-text without being altered, or when user-friendly-text is default or a resource string. <p>Assigning this flag an incorrect value only triggers a warning</p>|
+|**user-friendly-text**|String, keyword, resource string id| |Defines a user-friendly text for informing about caller crash. Not a mandatory field. It can take values: <ul><li>"$d" or "$D" for displaying a hard-coded default text, into which caller name is inserted</li><li>format mask including a ~a placeholder for caller name insertion</li><li>some plain text, that is not started by a $ or & sigill and that will be displayed as is.</li><li>&key where key ia an identifier for a resource string (and the resource string can itself be a formatting into which the caller app name can be inserted)</li></ul> Therefore plain text can be anything. However some caution is advised, when including special characters "$", "&", "~". <p>Omitting this field, providing a "$d" or $D value, or providing any incorrect configuration will cause boom to switch to a default hard-coded mask into which caller app name is inserted. Therefore, if the main window does not display the expected text, check logs for any information about a possible configuration error.</p>
+
+### Localization
+
+Localization files sit under resources/locales/. This directory is organized following the two part nomenclature in Unix and linux systems: a language folder in which variants subfolder are created. A language is picked automatically, based on OS preferences: en-US is default.
+
+Resource files are rktd files. Each record is a list of 4 key value pairs. Values are double quoted. Keys are:
+<ul>
+<li>title: Summarizes what the resource string is intended for</li>
+<li>subtitle: a longer description. For this key value can be ""</li>
+<li>key: the most important field as it is the case-dependent key which represents this resource in code</li>
+<li>val: the string, which will be displayed</li>
+</ul>
 
 ## Restarting caller app
 

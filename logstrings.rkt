@@ -7,6 +7,8 @@
 (define logger-prefix "boom")
 (define msg-exception-caught "A ~a exception was raised: ~a")
 (define msg-no-report "Caller sent no report or report could not be read")
+(define msg-empty-id "empty values don't make valid resource ids")
+(define msg-wrong-id "~a is not a valid resource id")
 (define msg-ftm-set "friendly text mask flag should be set")
 (define msg-ftm-unset "Check friendly text placeholder or unset mask flag")
 (define msg-ft-warning "friendly expression not evaluated")

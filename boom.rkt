@@ -188,29 +188,46 @@
                                          (caller-name)
                                          (rstr 'cpbody replace-cpbody))]) ; This the default algorithm
                 
-                   (with-handlers ([exn:fail? (λ(e)
-                                                (warn-config-exception e)
-                                                default-message)])
+                (with-handlers ([exn:fail? (λ(e)
+                                             
+                                             (warn-config-exception e)
+                                             (cnd-debug
+                                              (~a "Exception, while checking uft: " e))
+                                             
+                                             default-message)])
                      
-                     (let ([mask-analysis (eval-user-friendly-text)])
+                  (let ([mask-analysis (eval-user-friendly-text)])
 
-                       (if (uft-evaluation-done? mask-analysis)
-                           (begin
-                             ; sends warning if user-friendly-mask value is incorrect
-                             ; no else. The else case is when user-friendly-mask value is ok
-                             (case (uft-evaluation-flag-status mask-analysis)
-                               ['set-flag (warn-ftm #t)]
-                               ['unset-flag (warn-ftm #f)])
+                    (if (uft-evaluation-done? mask-analysis)
+                        (begin
+                          ; sends warning if user-friendly-mask value is incorrect
+                          ; no else. The else case is when user-friendly-mask value is ok
+                          (case (uft-evaluation-flag-status mask-analysis)
+                            ['set-flag (warn-ftm #t)]
+                            ['unset-flag (warn-ftm #f)])
+
+                          (cnd-debug
+                           (~a "algorithm: " (uft-evaluation-algorithm mask-analysis)))
                                
-                             (case (uft-evaluation-algorithm mask-analysis)
-                             ['default default-message]
-                             ['plain (user-friendly-text)]
-                             [else (format
-                                    (user-friendly-text)
-                                    (caller-name))]))
-                           (begin
-                             (warn-ft-config)
-                             default-message)))))]
+                          (case (uft-evaluation-algorithm mask-analysis)
+                            ['default default-message]
+                            ['plain (user-friendly-text)]
+                            ['resource (let* ([rk (rk-from-uft)] ; extracts resource key from value
+                                              ; checks whether resource is mask
+                                              [rmev (if (non-empty-string? rk)
+                                                        (resource-is-mask? rk)
+                                                        (void))])
+                                         (cond
+                                           [(eq? rmev #t) (format (rstr rk "~a")
+                                                                  (caller-name))] ; normally the "~a" default string should never be used, since we checked above, that the key pointed to something
+                                           [(eq? rmev #f) (rstr rk default-message)]
+                                           [else default-message]))]
+                            [else (format
+                                   (user-friendly-text)
+                                   (caller-name))]))
+                        (begin
+                          (warn-ft-config)
+                          default-message)))))]
        [font header-font%]
        [horiz-margin default-spacing]
        [auto-resize #t]))

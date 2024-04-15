@@ -122,9 +122,9 @@
    (current-logger)))
 
 
-(define/contract (log-custom severity text [data #f])
-  (->* (log-level/c string?)
-       any/c)
+(define (log-custom severity text [data #f])
+  ;(->* (log-level/c string?)
+  ;     any/c)
   
   (log-message boom-logger
                severity
@@ -141,10 +141,7 @@
   (log-custom 'error text data))
 
 
-(define/contract (warn text [data #f])
-  (->* (string?)
-       any/c)
-
+(define (warn text [data #f])
   (log-custom 'warning text data))
 
 
@@ -202,6 +199,7 @@
   (log-err  msg-no-report loc))
 
 
+; Warns about incorrect friendly-text-mask value in configuration file
 (define/contract (warn-ftm should-be-set?)
   (-> boolean? void?)
   
@@ -218,6 +216,14 @@
   (log-general e #f))
 
 
+(define (warn-invalid-id cause)
+  (warn
+   (if (non-empty-string? cause)
+       (format msg-wrong-id
+               cause)
+       msg-empty-id)))
+
+
 (provide
  connect-sentences
  log-code-issue
@@ -229,4 +235,5 @@
  log-no-report
  warn-ftm
  warn-ft-config
- warn-config-exception)
+ warn-config-exception
+ warn-invalid-id)

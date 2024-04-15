@@ -20,6 +20,15 @@
 ; turns on/off debugging in this module and the others
 (define debugger-on #f)
 
+
+
+(define-syntax (cnd-debug stx)
+  (syntax-case stx ()
+    [(_ a) #'(when debugger-on
+               (display a)
+               (display "\n"))]))
+
+
 (define product-name "Boom")
 
 ; original screen size. Used for computing frames aspect ratio
@@ -106,9 +115,25 @@
 (read-config (local-config-file-name))
 
 
+; special character, that is to be used in configuration files
+; this one can be used for user-friendly-text values.
+; the character sequence, which follows this prefix will be interpreted as special precomputed value
+; At the moment, only $d follows this syntax
+(define cfk-sigill-special "$")
+
+
+; special character, that is to be used in configuration files
+; this one can be used for user-friendly-text values.
+; the character sequence, which follows this prefix will be interpreted as a resource string id
+(define cfk-sigill-resource "&")
+
+
 ; keyword, which informs boom to use the default mask in order to produce user info message
 ; see user-info-text
-(define cfk-default "$d")
+(define cfk-default
+  (string-join
+   (list cfk-sigill-special "d")
+   ""))
 
 
 ; string for informing the user about caller app crash
@@ -119,9 +144,55 @@
   #:default-value cfk-default)
 
 
+; checks if user-friendly-text is default token
+; user-friendly-text is trimmed for comparison only, as additional whitespaces are assumed to be user-intended formatting characters
 (define (default-info-algorithm?)
   (string-ci=? cfk-default
-               (user-friendly-text)))
+               (string-trim
+                (user-friendly-text))))
+
+
+(define default-placeholder "~a")
+
+
+; checks if user-friendly-text value starts with "&"
+(define (resource-uft?)
+  (cnd-debug "checking resources\n")
+  
+  (string-prefix? (string-trim
+                   (user-friendly-text))
+                  cfk-sigill-resource))
+
+
+; function to be used when user-friendly-text value is expected to be a resource identifier and starts with '&'
+(define (rk-from-uft)
+  (if (resource-uft?)
+      (let ([rk (substring
+                 ; resource-uft? operates on trimmed values. That's why trimming is required here
+                 (string-trim
+                  (user-friendly-text))
+                 1)])
+
+        (cnd-debug
+         (~a "assayed key value : " rk))
+        
+        (if (non-empty-string? rk)
+            rk
+            (warn-invalid-id (void))))
+      (warn-invalid-id (user-friendly-text))))
+
+
+
+(define/contract (mask? s)
+  (-> string? boolean?)
+
+  (string-contains? s default-placeholder))
+
+
+(define symb-algo-def 'default)
+(define symb-algo-plain 'plain)
+(define symb-algo-mask 'mask)
+(define symb-algo-resource 'resource)
 
 
 ; boolean field informing about what user-friendly-text is:
@@ -149,7 +220,10 @@
                    [accept-algo (λ(v) ; procedure in charge of asserting the value for algorithm
                                   (list?
                                    (member algorithm-value
-                                           (list 'default 'plain 'mask))))]
+                                           (list symb-algo-def
+                                                 symb-algo-plain
+                                                 symb-algo-mask
+                                                 symb-algo-resource))))]
                    [accept-done-field (λ(v) ; procedure in charge of asserting the value for field done
                                         (boolean? v))]
                    [accept-flag (λ(v) ; procedure in charge of asserting the value for field flag-status
@@ -176,10 +250,10 @@
                                                                   (output-guard-message
                                                                    (format "Guard tests disabled ~a" m))))])
                                      (case applicable?
-                                           ['prompt (not-applicable-error "because of invalid prompt")]
-                                           ['test (not-applicable-error "by invalid test procedure")]
-                                           [else (unless (test-fun input-value)
-                                                   (stop-guard error-prompt input-value))])))])
+                                       ['prompt (not-applicable-error "because of invalid prompt")]
+                                       ['test (not-applicable-error "by invalid test procedure")]
+                                       [else (unless (test-fun input-value)
+                                               (stop-guard error-prompt input-value))])))])
 
               (assert-param algorithm-value accept-algo "invalid algorithm value")
               (assert-param done-value accept-done-field "field done must be boolean")
@@ -187,7 +261,7 @@
 
               (values done-value
                       algorithm-value
-                      flag-status-value))))                    
+                      flag-status-value))))  
               
 
 ; Sanity check of the informtion, that's been read from config file
@@ -202,21 +276,28 @@
                                               'unset-flag
                                               'ok))
 
-              (let ([mask-test (string-contains? (user-friendly-text) "~a")])
-                (cond
-                  ; discrepancy: user-friendly text contains a mask, whereas user-friendly-flag was improperly assigned #f value
-                  [(and mask-test
-                        (not (user-friendly-mask))) (uft-evaluation #t 'mask 'set-flag)]
-                  ;discrepancy user-friendly-mask says user-friendly-text should be handled as a mask, but no placeholder was found in it.
-                  [(and
-                    (not mask-test)
-                    (user-friendly-mask)) (uft-evaluation #t 'plain 'unset-flag)]
-                  ; OK: user-friendly-mask says user-friendly-text is plain text and we verified it.
-                  [(and
-                    (not mask-test)
-                    (not (user-friendly-mask))) (uft-evaluation #t 'plain 'ok)]
-                  ; OK: user-friendly-mask says, user-friendly-text is a mask and it was found to actually be one
-                  [else (uft-evaluation #t 'mask 'ok)])))
+              (if (resource-uft?)
+                  (begin
+                    (cnd-debug "User friendly text is a resource\n")
+                    
+                    (uft-evaluation #t symb-algo-resource 'ok))
+
+                  (let ([mask-test (mask?
+                                    (user-friendly-text))])
+                    (cond
+                      ; discrepancy: user-friendly text contains a mask, whereas user-friendly-flag was improperly assigned #f value
+                      [(and mask-test
+                            (not (user-friendly-mask))) (uft-evaluation #t 'mask 'set-flag)]
+                      ;discrepancy user-friendly-mask says user-friendly-text should be handled as a mask, but no placeholder was found in it.
+                      [(and
+                        (not mask-test)
+                        (user-friendly-mask)) (uft-evaluation #t 'plain 'unset-flag)]
+                      ; OK: user-friendly-mask says user-friendly-text is plain text and we verified it.
+                      [(and
+                        (not mask-test)
+                        (not (user-friendly-mask))) (uft-evaluation #t 'plain 'ok)]
+                      ; OK: user-friendly-mask says, user-friendly-text is a mask and it was found to actually be one
+                      [else (uft-evaluation #t 'mask 'ok)]))))
           (uft-evaluation #f 'default 'ok))
       (uft-evaluation #f 'default 'ok)))
 
@@ -508,11 +589,13 @@
  bitmap-default-alt
  builder-aspect
  cfk-default
+ cnd-debug
  debugger-on
  default-dates
  default-info-algorithm?
  default-left-margin
  default-line-spacing
+ default-placeholder
  default-report-file
  default-spacing
  default-top-margin
@@ -525,13 +608,19 @@
  user-friendly-mask
  user-friendly-text
  main-icon
+ mask?
  now->string
  product-name
  report-at-start
  report-extension
  restart-log-date
+ rk-from-uft
  show-summary
  summary-status-changed
+ symb-algo-def
+ symb-algo-plain
+ symb-algo-mask
+ symb-algo-resource
  task-icons-dir
  us-dates
  wrong-date-indicator
