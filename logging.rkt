@@ -122,9 +122,10 @@
    (current-logger)))
 
 
-(define (log-custom severity text [data #f])
-  ;(->* (log-level/c string?)
-  ;     any/c)
+(define/contract (log-custom severity text [data #f])
+  (->* (log-level/c string?)
+       (any/c)
+       void?)
   
   (log-message boom-logger
                severity
@@ -136,7 +137,8 @@
 
 (define/contract (log-err text [data #f])
   (->* (string?)
-       any/c)
+       (any/c)
+       void?)
   
   (log-custom 'error text data))
 

@@ -94,5 +94,9 @@
 ((title . "test format mask resource uft")
  (subtitle . "This resource string is for debugging purposes only. This is a formatting mask, that can be encoded in config file")
  (key . "uftm")
- (val . "Le nom de l'application peut être inséré ici : ~a")))
+ (val . "Le nom de l'application peut être inséré ici : ~a"))
+((title . "unlnown caller")
+ (subtitle . "string to be inserted in fakerep when caller is inknown")
+ (key . "ucall")
+ (val . "une application inconnue")))
 

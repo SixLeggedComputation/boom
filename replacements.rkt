@@ -24,5 +24,6 @@
 (define replace-endhead "Crash manager has been executed.Operations are summarized here")
 (define replace-endlabel "Summary")
 (define replace-os-prompt "operating system")
+(define replace-ucall "an unspecified application")
 
 (provide (all-defined-out))

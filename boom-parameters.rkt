@@ -18,7 +18,7 @@
   "replacements.rkt")
 
 ; turns on/off debugging in this module and the others
-(define debugger-on #f)
+(define debugger-on #t)
 
 
 
@@ -209,7 +209,7 @@
                                            (format "~a. Guard procedure. ~a"
                                                    name
                                                    msg))]
-                   [append-wrong-value (λ(v prompt) ; Formts a message saying that a wrong value has been detected and what it is
+                   [append-wrong-value (λ(v prompt) ; Formats a message saying that a wrong value has been detected and what it is
                                          (format "~a. Found: ~a"
                                                  prompt
                                                  v))]
@@ -264,14 +264,14 @@
                       flag-status-value))))  
               
 
-; Sanity check of the informtion, that's been read from config file
+; Sanity check of the information, that's been read from config file
 ; Looks for agreement between user-friendly-text and user-friendly-mask
 (define/contract (eval-user-friendly-text)
   (-> uft-evaluation?)
   
   (if (string? (user-friendly-text))
       (if (non-empty-string? (user-friendly-text))
-          (if (default-info-algorithm?)
+          (if (default-info-algorithm?) ; according to config file, should we use default text settings or something else ?
               (uft-evaluation #t 'default (if (user-friendly-mask)
                                               'unset-flag
                                               'ok))

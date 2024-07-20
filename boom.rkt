@@ -123,22 +123,28 @@
    (report-buffer-reading crash-data)))
 
 
-; extract caller software name and version for display
+; extracts caller software name and version for display
 (define (caller-name)
-  (let ([report-software (field-content 'software)]
-        [report-restart (let ([p (field-content 'restart)])
-                          (if (non-empty-string? p)
-                              ; file-name-from-path returns anything after last dir separator. arguments must be trimmed off.
-                              (file-name-from-path
-                               (car
-                                (string-split p))) ; string-split gets rid of possible command line arguments
-                              #f))]
-        [caller-version (field-content 'version)])
+  (let* ([report-software (field-content 'software)]
+         ; in case software is not provided by report, we read report-start, so as to use it as a surrogate
+         [report-restart (let ([p (field-content 'restart)])
+                           (if (non-empty-string? p)
+                               ; file-name-from-path returns anything after last dir separator. arguments must be trimmed off.
+                               (file-name-from-path
+                                (car
+                                 (string-split p))) ; string-split gets rid of possible command line arguments
+                               #f))]
+         [caller-version (field-content 'version)]
+         [version-missing? (if (non-empty-string? caller-version)
+                               ; in the fake reprot, version value is string 'unknown' or its translation to another supported language
+                               (string-ci=? (rstr 'unknown replace-unknown)
+                                            caller-version)
+                               #t)])
     (cond
-      [(non-empty-string? report-software) (if (non-empty-string? caller-version)
+      [(non-empty-string? report-software) (if version-missing?
+                                               report-software
                                                (string-join
-                                                (list report-software caller-version))
-                                               report-software)]
+                                                (list report-software caller-version)))]
       [(and (boolean? report-software)
             (non-empty-string? report-restart)) report-restart]
       [else (rstr 'smip replace-smip)])))
@@ -183,10 +189,11 @@
     
 ; User-friendly prompt for informing about caller crash
 (define user-friendly-prompt
-  (new message% [parent header-panel]
+  (new message% 
+       [parent header-panel]
        [label (let ([default-message (~a "Sorry, "
                                          (caller-name)
-                                         (rstr 'cpbody replace-cpbody))]) ; This the default algorithm
+                                         (rstr 'cpbody replace-cpbody))]) ; This the default algorithm, that is invked by value $d in config file variable (user-friendly-text)
                 
                 (with-handlers ([exn:fail? (λ(e)
                                              
@@ -196,7 +203,7 @@
                                              
                                              default-message)])
                      
-                  (let ([mask-analysis (eval-user-friendly-text)])
+                  (let ([mask-analysis (eval-user-friendly-text)]) ; looks to what is proposed by config file as a user friendly text
 
                     (if (uft-evaluation-done? mask-analysis)
                         (begin
