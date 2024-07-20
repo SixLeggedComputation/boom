@@ -66,7 +66,7 @@ The following table lists available keys. These are case-sensitive and must be d
 |**dau**              |boolean       |                                                                                                                                                                                                                                                                                                                                                                                                                                           Should the report file be destroyed after having been displayed? True by default. If another report with same name is emitted, it will crush the previous one anyway|
 
 
-###Command line
+### Command line
 
 Only the most basic configuration parameters have been implemented so far. Some more will be added. A default configuration is hard-coded, so that all command line parameters are optional.
 
@@ -75,15 +75,15 @@ Only the most basic configuration parameters have been implemented so far. Some 
 crash-report is a path or URL (not implemented yet). If not provided, boom will look either for a "crash.json" file in its executable directory or at the directory place pointed to by its settings.
 
 |Key|Type|Overrides|Allowed values|What it does|What happens when wrong?|
-|---|-----| |--------------|------------|----------------------|
-|**c**  |string| |paths or URL                   |Provides an alternative config file.|defaults to original config|
+|---|-----|---------|--------------|------------|----------------------|
+|**c**|string| |paths or URL|Provides an alternative config file.|defaults to original config|
 |**d**|boolean |destroy-after-usage|false (= f, #f, 0) or true (anything else)|if true, crash report file is erased, once used unless user choses to keep it. if false, crash report file is not erased|defaults to original config (= true). End decision is made by user in any case|
 |**i**|string  |main-icon|paths or URL|Use this this flag, in order to customize main form and have it display an icon of your own. Downloading from remote URLs is not implemented yet. For the moment, path must point to a valid image file. Following formats are supported: bmp, gif, jpeg, png.|The file is rejected. An alert is logged.|
 |**r**|string  |standard-report-file|paths or URL|Provides an alternative location for loading crash report. Download from remote location is not implemented yet. File must exists and be json|An error message is displayed in main window and an alert is logged|
 |**s**|boolean |show-summary|false (= f, #f, 0) or true (=anything else)|If true, summary window is disabled and does not show at the end|Defaults to config file value|
 |**v**|boolean|report-at-start|false (= f, #f, 0) or true (=anything else)|When true, the popup window displays crash report data by default on opening|If no proper crash report file is provided and -v is true, the popup window displays a message, which informs the user, it does not know by which app it has been called. There is no other context, in which things could go wrong, since any value that is not a false is interpreted as true|
 
-###Config file
+### Config file
 
 Config file name extension is *.cfg. Config files consist in key value pais in the form of a series ofencoded into S expressions. Case sensitive parameter name comes first (left column in table). It is followed by its value, which can be a double-quoted string literal, an integer or a float. Booleans are #t (true) and #f (false). Parameters ordering does not matter. None of them is mandatory. But if you change resources-icons, you will have to consider changing resources-tasks accordingly.
 
